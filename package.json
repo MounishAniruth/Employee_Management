@@ -1,0 +1,13 @@
+{
+  "dependencies": {
+    "@testing-library/react": "^16.1.0",
+    "axios": "^1.7.9",
+    "dotenv": "^16.4.7",
+    "jwt-decode": "^4.0.0",
+    "react-router-dom": "^7.1.0",
+    "styled-components": "^6.1.13"
+  },
+  "devDependencies": {
+    "prettier": "^3.4.2"
+  }
+}

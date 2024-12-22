@@ -18,7 +18,7 @@ app.get('/', (req, res) => {
 });
 
 // Use authRoutes for authentication-related routes
-app.use('/api', authRoutes); // All auth routes will have the `/api` prefix
+app.use('/api/auth', authRoutes); // All auth routes will have the `/api` prefix
 
 // Start server
 const PORT = process.env.PORT || 5001;

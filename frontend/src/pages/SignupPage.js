@@ -33,7 +33,7 @@ const SignupPage = () => {
 
     try {
       // Make API call to signup endpoint
-      const response = await axios.post("http://localhost:5001/api/signup", formData);
+      const response = await axios.post("http://localhost:5001/api/auth/signup", formData);
       alert(response.data.message);
 
       // Clear form after successful submission

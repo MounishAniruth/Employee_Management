@@ -38,10 +38,9 @@ const checkQuery = 'SELECT * FROM Users WHERE phone = ?';
 
 
 // Login function
-const login = async (req, res) => {
+router.post("/login",async (req, res) => {
   const { phone, password } = req.body;
-  const db = req.app.get('db'); // Get the db connection set in server.js
-
+  
   const query = 'SELECT * FROM Users WHERE phone = ?';
   db.query(query, [phone], async (err, results) => {
     if (err || results.length === 0) {
@@ -57,7 +56,7 @@ const login = async (req, res) => {
     const token = jwt.sign({ id: user.id }, process.env.JWT_SECRET, { expiresIn: '1h' });
     res.status(200).json({ message: 'Login successful', token });
   });
-};
+});
 
 
 module.exports = router;

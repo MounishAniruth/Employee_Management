@@ -5,7 +5,7 @@ import styled from "styled-components";
 
 const LoginPage = () => {
   const [loginData, setLoginData] = useState({
-    identifier: "", // Use "identifier" for both phone and email
+    identifier: "", // Changed from 'phone' to 'identifier'
     password: "",
   });
 
@@ -23,12 +23,14 @@ const LoginPage = () => {
     try {
       const response = await axios.post("http://localhost:5001/api/auth/login", loginData);
       const { token, message } = response.data;
-
+  
       localStorage.setItem("authToken", token);
-
+  
       setSuccess(message);
       setError("");
-      navigate("/home"); // Redirect after successful login (you can change the path as needed)
+  
+      // Navigate to the Home Page after successful login
+      navigate("/home");
     } catch (err) {
       if (err.response && err.response.data && err.response.data.message) {
         setError(err.response.data.message);
@@ -37,7 +39,7 @@ const LoginPage = () => {
       }
       setSuccess("");
     }
-  };
+  };  
 
   return (
     <Container>
@@ -46,8 +48,8 @@ const LoginPage = () => {
         <Form onSubmit={handleSubmit}>
           <Input
             type="text"
-            name="identifier"  // Using identifier for phone or email
-            placeholder="Phone Number or Email"
+            name="identifier" // Updated field name
+            placeholder="Email or Phone Number"
             value={loginData.identifier}
             onChange={handleInputChange}
             required
@@ -84,7 +86,7 @@ const Container = styled.div`
   justify-content: center;
   align-items: center;
   min-height: 100vh;
-  background: linear-gradient(to right,rgb(183, 129, 241),rgb(113, 158, 235));
+  background: linear-gradient(to right, #6a11cb, #2575fc);
 `;
 
 const Card = styled.div`

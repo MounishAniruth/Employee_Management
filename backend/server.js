@@ -1,27 +1,25 @@
 const express = require('express');
-const mysql = require('mysql2');
-const bodyParser = require('body-parser');
 const cors = require('cors');
-require('dotenv').config();
-const authRoutes = require('./routes/authRoutes'); // Import authRoutes
+const bodyParser = require('body-parser');
+const dotenv = require('dotenv');
+const authRoutes = require('./routes/authRoutes'); // Authentication routes
+const db = require('./config/db'); // MySQL connection pool
+
+dotenv.config();
 
 const app = express();
 
-
-// Middlewares
+// Middleware
 app.use(cors());
 app.use(bodyParser.json());
 
-// Example route
+// Routes
+app.use('/api/auth', authRoutes); // Authentication routes
+
+// Example route for testing server
 app.get('/', (req, res) => {
   res.send('Server is running!');
 });
-
-// Use authRoutes for authentication-related routes
-app.use('/api/auth', authRoutes);
-
-// Use lorry-related routes
-app.use('/api/lorries', lorryRoutes);
 
 // Start server
 const PORT = process.env.PORT || 5001;

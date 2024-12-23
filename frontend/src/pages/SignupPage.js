@@ -23,16 +23,19 @@ const SignupPage = () => {
   const handleSubmit = async (e) => {
     e.preventDefault();
     setError(""); 
-
+  
     if (!formData.name || !formData.phone || !formData.email || !formData.password || !formData.userType) {
       setError("All fields are required!");
       return;
     }
-
+  
     try {
       const response = await axios.post("http://localhost:5001/api/auth/signup", formData);
       alert(response.data.message);
-
+  
+      // Navigate to the Home Page after successful signup
+      navigate("/home");
+  
       setFormData({
         name: "",
         phone: "",
@@ -44,6 +47,7 @@ const SignupPage = () => {
       setError(err.response?.data?.message || "Something went wrong! Please try again.");
     }
   };
+  
 
   return (
     <Container>
@@ -117,7 +121,7 @@ const Container = styled.div`
   justify-content: center;
   align-items: center;
   min-height: 100vh;
-  background: linear-gradient(to right,rgb(185, 134, 240),rgb(121, 165, 240));
+  background: linear-gradient(to right, #6a11cb, #2575fc);
 `;
 
 const Card = styled.div`

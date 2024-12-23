@@ -16,7 +16,7 @@ app.use(bodyParser.json());
 
 // Routes
 app.use('/api/auth', authRoutes); // Authentication routes
-app.use('/api/lorry', lorryRoutes); 
+app.use('/api', lorryRoutes); 
 
 // Example route for testing server
 app.get('/', (req, res) => {

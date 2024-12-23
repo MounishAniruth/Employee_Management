@@ -1,67 +1,63 @@
 const express = require('express');
 const router = express.Router();
+const jwt = require('jsonwebtoken');
 const Lorry = require('../models/Lorry');
-const db = require("../config/db");
+const db = require('../config/db');
 
-// Add a new lorry
-router.post('/add', async (req, res) => {
+// Middleware to verify if the user is an authenticated owner
+const verifyOwner = (req, res, next) => {
+  const token = req.header('Authorization');
+
+  if (!token) {
+    return res.status(401).send('Access Denied: No Token Provided');
+  }
+
+  try {
+    const decoded = jwt.verify(token, 'your_jwt_secret'); // Use your JWT secret here
+    req.user = decoded; // Attach user data to request
+    if (req.user.user_type !== 'owner') {
+      return res.status(403).send('Access Denied: Not an Owner');
+    }
+    next();
+  } catch (err) {
+    return res.status(400).send('Invalid Token');
+  }
+};
+
+// Route to get all lorries
+// Example of using Lorry.findAll in a route
+router.get('/lorry', (req, res) => {
+  Lorry.findAll((err, lorries) => {
+    if (err) {
+      return res.status(500).send('Error fetching lorries');
+    }
+    return res.status(200).json(lorries); // Send lorries in JSON format
+  });
+});
+
+// Example of using Lorry.addLorry in a route
+router.post('/lorry/add', (req, res) => {
   const { registration_number, owner_phone, model, year_built } = req.body;
 
-  // Check if the lorry with the same registration number already exists
-  const checkQuery = 'SELECT * FROM lorries WHERE registration_number = ?';
-  db.query(checkQuery, [registration_number], (err, results) => {
+  const newLorry = { registration_number, owner_phone, model, year_built };
+
+  Lorry.addLorry(newLorry, (err, result) => {
     if (err) {
-      console.error(err);
-      return res.status(500).json({ message: 'Error checking lorry' });
+      return res.status(500).send('Error adding lorry');
     }
-    if (results.length > 0) {
-      return res.status(400).json({ message: 'Lorry with this registration number already exists' });
-    }
-
-    // Add the new lorry to the database
-    const query = 'INSERT INTO lorries (registration_number, owner_phone, model, year_built) VALUES (?, ?, ?, ?)';
-    const values = [registration_number, owner_phone, model, year_built];
-
-    db.query(query, values, (err, results) => {
-      if (err) {
-        console.error(err);
-        return res.status(500).json({ message: 'Error adding lorry' });
-      }
-      res.status(201).json({ message: 'Lorry added successfully', lorry: results });
-    });
+    return res.status(201).send('Lorry added successfully');
   });
 });
 
-// Get all lorries
-router.get('/', async (req, res) => {
-  const query = 'SELECT * FROM lorries';
-  
-  db.query(query, (err, results) => {
+// Example of using Lorry.deleteLorry in a route
+router.delete('/lorry/:registration_number', (req, res) => {
+  const { registration_number } = req.params;
+
+  Lorry.deleteLorry(registration_number, (err, result) => {
     if (err) {
-      console.error(err);
-      return res.status(500).json({ message: 'Error fetching lorries' });
+      return res.status(500).send('Error deleting lorry');
     }
-    res.status(200).json(results);
+    return res.status(200).send('Lorry deleted successfully');
   });
 });
-
-// Delete a lorry by registration number
-router.delete('/:registrationNumber', async (req, res) => {
-  const { registrationNumber } = req.params;
-
-  // Delete the lorry from the database
-  const query = 'DELETE FROM lorries WHERE registration_number = ?';
-  
-  db.query(query, [registrationNumber], (err, result) => {
-    if (err) {
-      console.error(err);
-      return res.status(500).json({ message: 'Error deleting lorry' });
-    }
-    if (result.affectedRows === 0) {
-      return res.status(404).json({ message: 'Lorry not found' });
-    }
-    res.status(200).json({ message: 'Lorry deleted successfully' });
-  });
-});
-
 module.exports = router;

@@ -1,26 +1,28 @@
-import React, { useState, useEffect } from 'react';
-import styled from 'styled-components';
-import axios from 'axios';
-import { useNavigate } from 'react-router-dom';  // Updated import
-
+import React, { useState, useEffect } from "react";
+import styled from "styled-components";
+import axios from "axios";
+import { useNavigate } from "react-router-dom";
 
 const HomePage = () => {
   const [lorries, setLorries] = useState([]);
   const [isFormVisible, setIsFormVisible] = useState(false);
-  const [registrationNumber, setRegistrationNumber] = useState('');
-  const [ownerPhone, setOwnerPhone] = useState('');
-  const [model, setModel] = useState('');
-  const [yearBuilt, setYearBuilt] = useState('');
-  const navigate = useNavigate();  // Updated to use navigate
+  const [registrationNumber, setRegistrationNumber] = useState("");
+  const [ownerPhone, setOwnerPhone] = useState("");
+  const [model, setModel] = useState("");
+  const [yearBuilt, setYearBuilt] = useState("");
+  const [ownerName, setOwnerName] = useState("Thangavelu"); // Static name
+  const [ownerPhoneHeader, setOwnerPhoneHeader] = useState("9443769338"); // Static phone number
+  
+  const navigate = useNavigate();
 
-  // Fetch lorries on initial load
   useEffect(() => {
     const fetchLorries = async () => {
       try {
-        const response = await axios.get('http://localhost:5001/api/lorry');
+        const response = await axios.get("http://localhost:5001/api/lorry");
         setLorries(response.data);
       } catch (error) {
-        console.error('Error fetching lorries:', error);
+        console.error("Error fetching lorries:", error.response ? error.response.data : error.message);
+        alert("Error fetching lorries. Please check the backend server.");
       }
     };
     fetchLorries();
@@ -33,35 +35,42 @@ const HomePage = () => {
   const handleSubmit = async (e) => {
     e.preventDefault();
     try {
-      const newLorry = { registration_number: registrationNumber, owner_phone: ownerPhone, model, year_built: yearBuilt };
-      await axios.post('http://localhost:5001/api/lorry/add', newLorry);
-      alert('Lorry added successfully');
-      setIsFormVisible(false);  // Hide form after submission
-      // Fetch updated list of lorries
-      const response = await axios.get('http://localhost:5001/api/lorry/');
+      const newLorry = {
+        registration_number: registrationNumber,
+        owner_phone: ownerPhone,
+        model,
+        year_built: yearBuilt,
+      };
+      await axios.post("http://localhost:5001/api/lorry/add", newLorry);
+      alert("Lorry added successfully");
+      setIsFormVisible(false);
+      const response = await axios.get("http://localhost:5001/api/lorry");
       setLorries(response.data);
     } catch (error) {
-      console.error('Error adding lorry:', error);
-      alert('Failed to add lorry');
+      console.error("Error adding lorry:", error);
+      alert("Failed to add lorry");
     }
   };
 
   const handleDeleteLorry = async (registrationNumber) => {
     try {
-      // Send a DELETE request to remove the lorry
-      await axios.delete(`http://localhost:5001/api/lorry/${registrationNumber}`);
-      alert('Lorry deleted successfully');
-      // Remove deleted lorry from UI
-      setLorries(lorries.filter(lorry => lorry.registration_number !== registrationNumber));
+      await axios.delete(
+        `http://localhost:5001/api/lorry/${registrationNumber}`
+      );
+      alert("Lorry deleted successfully");
+      setLorries(
+        lorries.filter(
+          (lorry) => lorry.registration_number !== registrationNumber
+        )
+      );
     } catch (error) {
-      console.error('Error deleting lorry:', error);
-      alert('Failed to delete lorry');
+      console.error("Error deleting lorry:", error);
+      alert("Failed to delete lorry");
     }
   };
 
-  const handleCardClick = (registrationNumber) => {
-    // Navigate to the dashboard page for the clicked lorry
-    navigate(`/dashboard/${registrationNumber}`);  // Updated to use navigate
+  const handleLorryClick = (registrationNumber) => {
+    navigate(`/dashboard/${registrationNumber}`);
   };
 
   return (
@@ -69,13 +78,13 @@ const HomePage = () => {
       <Header>
         <CompanyName>Sri Murugan Rig Service</CompanyName>
         <OwnerInfo>
-          <div>K Thangavelu</div>
-          <div>9443769338</div>
+          <OwnerName>{ownerName}</OwnerName>
+          <OwnerPhone>{ownerPhoneHeader}</OwnerPhone>
         </OwnerInfo>
       </Header>
 
       <AddLorryButton onClick={handleAddLorry}>
-        {isFormVisible ? 'Cancel' : 'Add Lorry'}
+        {isFormVisible ? "Cancel" : "Add Lorry"}
       </AddLorryButton>
 
       {isFormVisible && (
@@ -114,17 +123,29 @@ const HomePage = () => {
 
       <LorryListContainer>
         {lorries.map((lorry) => (
-          <LorryCard key={lorry.registration_number} onClick={() => handleCardClick(lorry.registration_number)}>
+          <LorryCard key={lorry.registration_number} onClick={() => handleLorryClick(lorry.registration_number)}>
+            <OwnerName>{lorry.owner_phone || "Unknown Owner"}</OwnerName>
+            <ImageContainer>
+              <img
+                src={
+                  lorry.image_url
+                    ? `path-to-assets-folder/${lorry.image_url}`
+                    : "/assets/image/placeholder.png"
+                }
+                alt="Lorry"
+              />
+            </ImageContainer>
             <LorryDetails>
               <div>Registration: {lorry.registration_number}</div>
-              <div>Owner: {lorry.owner_phone}</div>
               <div>Model: {lorry.model}</div>
               <div>Year Built: {lorry.year_built}</div>
             </LorryDetails>
-            <DeleteButton onClick={(e) => {
-              e.stopPropagation(); // Prevent card click from firing
-              handleDeleteLorry(lorry.registration_number);
-            }}>
+            <DeleteButton
+              onClick={(e) => {
+                e.stopPropagation();
+                handleDeleteLorry(lorry.registration_number);
+              }}
+            >
               Delete
             </DeleteButton>
           </LorryCard>
@@ -136,61 +157,50 @@ const HomePage = () => {
 
 export default HomePage;
 
+// Styled components
+
 const Container = styled.div`
+  display: flex;
+  flex-direction: column;
+  align-items: center;
   padding: 20px;
 `;
 
 const Header = styled.div`
   display: flex;
   justify-content: space-between;
+  width: 100%;
+  margin-bottom: 30px;
+  position: relative;
   align-items: center;
-  margin-bottom: 20px;
 `;
 
 const CompanyName = styled.h1`
-  font-size: 2.5rem;
+  font-size: 3rem;
   font-weight: bold;
+  color: #333;
+  text-align: center;
+  margin: 0;
+  flex-grow: 1;
 `;
 
 const OwnerInfo = styled.div`
   text-align: right;
+  padding-right: 10px;
+`;
+
+const OwnerName = styled.div`
   font-size: 1.2rem;
+  font-weight: bold;
+  color: #333;
   font-weight: 500;
 `;
 
-const LorryCard = styled.div`
-  border: 1px solid #ddd;
-  border-radius: 10px;
-  padding: 15px;
-  width: 30%;
-  text-align: center;
-  box-shadow: 0 2px 5px rgba(0, 0, 0, 0.1);
-  margin: 10px;
-  cursor: pointer;
-  transition: 0.3s;
-  
-  &:hover {
-    box-shadow: 0 4px 10px rgba(0, 0, 0, 0.2);
-  }
-`;
-
-const LorryDetails = styled.div`
-  margin-bottom: 10px;
-`;
-
-const DeleteButton = styled.button`
-  background-color: #f44336;
-  color: white;
-  border: none;
-  padding: 5px 10px;
-  border-radius: 5px;
-  cursor: pointer;
-  font-size: 14px;
-  margin-top: 10px;
-  
-  &:hover {
-    background-color: #e57373;
-  }
+const OwnerPhone = styled.div`
+  font-size: 1.2rem;
+  color: #333;
+  font-weight: 500;
+  margin-top: 5px;
 `;
 
 const AddLorryButton = styled.button`
@@ -220,5 +230,62 @@ const Input = styled.input`
 const LorryListContainer = styled.div`
   display: flex;
   flex-wrap: wrap;
+  justify-content: center;
   gap: 20px;
+`;
+
+const LorryCard = styled.div`
+  border: 1px solid #ddd;
+  border-radius: 10px;
+  padding: 15px;
+  width: 300px;
+  box-shadow: 0 4px 8px rgba(0, 0, 0, 0.1);
+  margin: 20px;
+  overflow: hidden;
+  text-align: center;
+  cursor: pointer;
+  transition: 0.3s ease-in-out;
+
+  &:hover {
+    box-shadow: 0 6px 12px rgba(0, 0, 0, 0.2);
+    transform: scale(1.05);
+  }
+`;
+
+const ImageContainer = styled.div`
+  height: 200px;
+  width: 100%;
+  overflow: hidden;
+  border-radius: 10px;
+  margin-bottom: 10px;
+
+  img {
+    width: 100%;
+    height: 100%;
+    object-fit: cover;
+  }
+`;
+
+const LorryDetails = styled.div`
+  font-size: 14px;
+  color: #333;
+
+  div {
+    margin: 5px 0;
+  }
+`;
+
+const DeleteButton = styled.button`
+  background-color: #f44336;
+  color: white;
+  border: none;
+  padding: 5px 10px;
+  border-radius: 5px;
+  cursor: pointer;
+  font-size: 14px;
+  margin-top: 10px;
+
+  &:hover {
+    background-color: #e57373;
+  }
 `;

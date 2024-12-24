@@ -3,7 +3,8 @@ const cors = require('cors');
 const bodyParser = require('body-parser');
 const dotenv = require('dotenv');
 const authRoutes = require('./routes/authRoutes'); // Authentication routes
-const lorryRoutes = require('./routes/lorryRoutes'); // Import lorry routes
+const lorryRoutes = require('./routes/lorryRoutes'); // Lorry routes
+const employeeRoutes = require('./routes/employeeRoutes'); // Employee routes
 const db = require('./config/db'); // MySQL connection pool
 
 dotenv.config();
@@ -16,7 +17,8 @@ app.use(bodyParser.json());
 
 // Routes
 app.use('/api/auth', authRoutes); // Authentication routes
-app.use('/api', lorryRoutes); 
+app.use('/api', lorryRoutes); // Lorry routes
+app.use('/api', employeeRoutes); // Employee routes
 
 // Example route for testing server
 app.get('/', (req, res) => {

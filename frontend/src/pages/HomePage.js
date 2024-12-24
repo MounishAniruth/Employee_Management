@@ -2,17 +2,19 @@ import React, { useState, useEffect } from "react";
 import styled from "styled-components";
 import axios from "axios";
 import { useNavigate } from "react-router-dom";
+import LorryImage from "../assets/images/TN34K3749.jpeg";
 
 const HomePage = () => {
+  const STATIC_NAME = "Thangavelu";
+  const STATIC_PHONE = "9443769338";
+
   const [lorries, setLorries] = useState([]);
   const [isFormVisible, setIsFormVisible] = useState(false);
   const [registrationNumber, setRegistrationNumber] = useState("");
   const [ownerPhone, setOwnerPhone] = useState("");
   const [model, setModel] = useState("");
   const [yearBuilt, setYearBuilt] = useState("");
-  const [ownerName, setOwnerName] = useState("Thangavelu"); // Static name
-  const [ownerPhoneHeader, setOwnerPhoneHeader] = useState("9443769338"); // Static phone number
-  
+  const [ownerName, setOwnerName] = useState("");
   const navigate = useNavigate();
 
   useEffect(() => {
@@ -20,8 +22,9 @@ const HomePage = () => {
       try {
         const response = await axios.get("http://localhost:5001/api/lorry");
         setLorries(response.data);
+        console.log("Lorries fetched:", response.data); // Debugging log
       } catch (error) {
-        console.error("Error fetching lorries:", error.response ? error.response.data : error.message);
+        console.error("Error fetching lorries:", error);
         alert("Error fetching lorries. Please check the backend server.");
       }
     };
@@ -40,6 +43,7 @@ const HomePage = () => {
         owner_phone: ownerPhone,
         model,
         year_built: yearBuilt,
+        owner_name: ownerName,
       };
       await axios.post("http://localhost:5001/api/lorry/add", newLorry);
       alert("Lorry added successfully");
@@ -54,15 +58,9 @@ const HomePage = () => {
 
   const handleDeleteLorry = async (registrationNumber) => {
     try {
-      await axios.delete(
-        `http://localhost:5001/api/lorry/${registrationNumber}`
-      );
+      await axios.delete(`http://localhost:5001/api/lorry/${registrationNumber}`);
       alert("Lorry deleted successfully");
-      setLorries(
-        lorries.filter(
-          (lorry) => lorry.registration_number !== registrationNumber
-        )
-      );
+      setLorries(lorries.filter((lorry) => lorry.registration_number !== registrationNumber));
     } catch (error) {
       console.error("Error deleting lorry:", error);
       alert("Failed to delete lorry");
@@ -70,7 +68,13 @@ const HomePage = () => {
   };
 
   const handleLorryClick = (registrationNumber) => {
+    console.log('Navigating to dashboard with registration number:', registrationNumber);
     navigate(`/dashboard/${registrationNumber}`);
+  };
+
+  const handleLogout = () => {
+    localStorage.removeItem("authToken");
+    navigate("/login");
   };
 
   return (
@@ -78,9 +82,10 @@ const HomePage = () => {
       <Header>
         <CompanyName>Sri Murugan Rig Service</CompanyName>
         <OwnerInfo>
-          <OwnerName>{ownerName}</OwnerName>
-          <OwnerPhone>{ownerPhoneHeader}</OwnerPhone>
+          <OwnerName>{STATIC_NAME}</OwnerName>
+          <OwnerPhone>{STATIC_PHONE}</OwnerPhone>
         </OwnerInfo>
+        <LogoutButton onClick={handleLogout}>Logout</LogoutButton>
       </Header>
 
       <AddLorryButton onClick={handleAddLorry}>
@@ -94,6 +99,13 @@ const HomePage = () => {
             placeholder="Registration Number"
             value={registrationNumber}
             onChange={(e) => setRegistrationNumber(e.target.value)}
+            required
+          />
+          <Input
+            type="text"
+            placeholder="Owner Name"
+            value={ownerName}
+            onChange={(e) => setOwnerName(e.target.value)}
             required
           />
           <Input
@@ -123,23 +135,22 @@ const HomePage = () => {
 
       <LorryListContainer>
         {lorries.map((lorry) => (
-          <LorryCard key={lorry.registration_number} onClick={() => handleLorryClick(lorry.registration_number)}>
+          <LorryCard
+            key={lorry.registration_number}
+            onClick={() => handleLorryClick(lorry.registration_number)}
+          >
             <OwnerName>{lorry.owner_phone || "Unknown Owner"}</OwnerName>
             <ImageContainer>
-              <img
-                src={
-                  lorry.image_url
-                    ? `path-to-assets-folder/${lorry.image_url}`
-                    : "/assets/image/placeholder.png"
-                }
-                alt="Lorry"
-              />
+              <img src={LorryImage} alt="Lorry model TN34K3749" />
             </ImageContainer>
+
             <LorryDetails>
+              <div>Owner Name: {lorry.owner_name}</div>
               <div>Registration: {lorry.registration_number}</div>
               <div>Model: {lorry.model}</div>
               <div>Year Built: {lorry.year_built}</div>
             </LorryDetails>
+
             <DeleteButton
               onClick={(e) => {
                 e.stopPropagation();
@@ -165,14 +176,19 @@ const Container = styled.div`
   align-items: center;
   padding: 20px;
 `;
-
 const Header = styled.div`
   display: flex;
-  justify-content: space-between;
+  justify-content: center; /* Ensure everything is centered */
+  align-items: center;
   width: 100%;
   margin-bottom: 30px;
   position: relative;
-  align-items: center;
+  flex-wrap: wrap; /* Ensure it wraps correctly on smaller screens */
+
+  @media (max-width: 768px) {
+    flex-direction: column;
+    align-items: flex-start;
+  }
 `;
 
 const CompanyName = styled.h1`
@@ -181,26 +197,52 @@ const CompanyName = styled.h1`
   color: #333;
   text-align: center;
   margin: 0;
-  flex-grow: 1;
+  flex-grow: 1; /* This ensures that it will take available space and center itself */
+
+  @media (max-width: 768px) {
+    font-size: 2rem;
+  }
 `;
 
 const OwnerInfo = styled.div`
   text-align: right;
   padding-right: 10px;
+
+  @media (max-width: 768px) {
+    margin-top: 10px;
+    text-align: left;
+  }
 `;
 
 const OwnerName = styled.div`
   font-size: 1.2rem;
   font-weight: bold;
   color: #333;
-  font-weight: 500;
 `;
 
 const OwnerPhone = styled.div`
   font-size: 1.2rem;
   color: #333;
-  font-weight: 500;
   margin-top: 5px;
+`;
+
+const LogoutButton = styled.button`
+  padding: 10px 20px;
+  background-color: #f44336;
+  color: white;
+  border: none;
+  border-radius: 5px;
+  cursor: pointer;
+  margin-left: 20px;
+
+  @media (max-width: 768px) {
+    margin-left: 0;
+    margin-top: 10px;
+  }
+
+  &:hover {
+    background-color: #e57373;
+  }
 `;
 
 const AddLorryButton = styled.button`

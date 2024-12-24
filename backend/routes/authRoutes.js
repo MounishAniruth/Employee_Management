@@ -37,27 +37,6 @@ const checkQuery = 'SELECT * FROM Users WHERE phone = ?';
 });
 
 
-// Login function
-/*router.post("/login",async (req, res) => {
-  const { phone, password } = req.body;
-  
-  const query = 'SELECT * FROM Users WHERE phone = ?';
-  db.query(query, [phone], async (err, results) => {
-    if (err || results.length === 0) {
-      return res.status(400).json({ message: 'Invalid phone number or password' });
-    }
-
-    const user = results[0];
-    const isMatch = await bcrypt.compare(password, user.password);
-    if (!isMatch) {
-      return res.status(400).json({ message: 'Invalid phone number or password' });
-    }
-
-    const token = jwt.sign({ id: user.id }, process.env.JWT_SECRET, { expiresIn: '1h' });
-    res.status(200).json({ message: 'Login successful', token });
-  });
-});
-*/
 
 router.post("/login", async (req, res) => {
   const { identifier, password } = req.body; // Use 'identifier' in the request body

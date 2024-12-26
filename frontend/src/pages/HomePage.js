@@ -40,7 +40,7 @@ const HomePage = () => {
     try {
       const newLorry = {
         registration_number: registrationNumber,
-        owner_phone: ownerPhone,
+        owner_phone: ownerPhone,  // Ensure phone is passed to match the owner
         model,
         year_built: yearBuilt,
         owner_name: ownerName,
@@ -67,9 +67,9 @@ const HomePage = () => {
     }
   };
 
-  const handleLorryClick = (registrationNumber) => {
-    console.log('Navigating to dashboard with registration number:', registrationNumber);
-    navigate(`/dashboard/${registrationNumber}`);
+  const handleLorryClick = (id) => {
+    console.log('Navigating to dashboard with registration number:', id);
+    navigate(`/dashboard/${id}`);
   };
 
   const handleLogout = () => {
@@ -129,28 +129,27 @@ const HomePage = () => {
             onChange={(e) => setYearBuilt(e.target.value)}
             required
           />
-          <button type="submit">Add Lorry</button>
+          <SubmitButton type="submit">Add Lorry</SubmitButton>
         </AddLorryForm>
       )}
 
       <LorryListContainer>
         {lorries.map((lorry) => (
-          <LorryCard
-            key={lorry.registration_number}
-            onClick={() => handleLorryClick(lorry.registration_number)}
-          >
-            <OwnerName>{lorry.owner_phone || "Unknown Owner"}</OwnerName>
+          <LorryCard key={lorry.registration_number} onClick={() => handleLorryClick(lorry.id)}>
+            {/* Display Owner Phone Number */}
+            <OwnerPhoneText>{lorry.owner_phone || "Unknown Owner"}</OwnerPhoneText>
+        
             <ImageContainer>
               <img src={LorryImage} alt="Lorry model TN34K3749" />
             </ImageContainer>
-
+        
             <LorryDetails>
               <div>Owner Name: {lorry.owner_name}</div>
               <div>Registration: {lorry.registration_number}</div>
               <div>Model: {lorry.model}</div>
               <div>Year Built: {lorry.year_built}</div>
             </LorryDetails>
-
+        
             <DeleteButton
               onClick={(e) => {
                 e.stopPropagation();
@@ -174,21 +173,20 @@ const Container = styled.div`
   display: flex;
   flex-direction: column;
   align-items: center;
-  padding: 20px;
+  padding: 30px;
+  background-color: #f9f9f9;
 `;
+
 const Header = styled.div`
   display: flex;
-  justify-content: center; /* Ensure everything is centered */
+  justify-content: center;
   align-items: center;
   width: 100%;
-  margin-bottom: 30px;
+  margin-bottom: 40px;
   position: relative;
-  flex-wrap: wrap; /* Ensure it wraps correctly on smaller screens */
-
-  @media (max-width: 768px) {
-    flex-direction: column;
-    align-items: flex-start;
-  }
+  flex-wrap: wrap;
+  border-bottom: 1px solid #ddd;
+  padding-bottom: 20px;
 `;
 
 const CompanyName = styled.h1`
@@ -197,16 +195,17 @@ const CompanyName = styled.h1`
   color: #333;
   text-align: center;
   margin: 0;
-  flex-grow: 1; /* This ensures that it will take available space and center itself */
+  flex-grow: 1;
 
   @media (max-width: 768px) {
-    font-size: 2rem;
+    font-size: 2.5rem;
   }
 `;
 
 const OwnerInfo = styled.div`
   text-align: right;
-  padding-right: 10px;
+  padding-right: 20px;
+  flex-shrink: 0;
 
   @media (max-width: 768px) {
     margin-top: 10px;
@@ -215,7 +214,7 @@ const OwnerInfo = styled.div`
 `;
 
 const OwnerName = styled.div`
-  font-size: 1.2rem;
+  font-size: 1.5rem;
   font-weight: bold;
   color: #333;
 `;
@@ -246,60 +245,82 @@ const LogoutButton = styled.button`
 `;
 
 const AddLorryButton = styled.button`
-  padding: 10px 20px;
+  padding: 12px 25px;
   background-color: #4caf50;
   color: white;
   border: none;
   border-radius: 5px;
   cursor: pointer;
-  margin-top: 20px;
+  margin-top: 30px;
+  font-size: 16px;
+
+  &:hover {
+    background-color: #45a049;
+  }
 `;
 
 const AddLorryForm = styled.form`
   display: flex;
   flex-direction: column;
-  gap: 10px;
-  margin-top: 20px;
+  gap: 12px;
+  margin-top: 30px;
+  width: 100%;
+  max-width: 400px;
 `;
 
 const Input = styled.input`
-  padding: 10px;
+  padding: 12px;
   font-size: 16px;
   border-radius: 5px;
   border: 1px solid #ddd;
+  width: 100%;
+`;
+
+const SubmitButton = styled.button`
+  padding: 12px;
+  background-color: #4caf50;
+  color: white;
+  border: none;
+  border-radius: 5px;
+  cursor: pointer;
+  font-size: 16px;
+
+  &:hover {
+    background-color: #45a049;
+  }
 `;
 
 const LorryListContainer = styled.div`
   display: flex;
   flex-wrap: wrap;
   justify-content: center;
-  gap: 20px;
+  gap: 30px;
+  margin-top: 40px;
 `;
 
 const LorryCard = styled.div`
   border: 1px solid #ddd;
-  border-radius: 10px;
-  padding: 15px;
-  width: 300px;
-  box-shadow: 0 4px 8px rgba(0, 0, 0, 0.1);
-  margin: 20px;
-  overflow: hidden;
+  border-radius: 12px;
+  padding: 20px;
+  width: 320px;
+  box-shadow: 0 4px 12px rgba(0, 0, 0, 0.1);
+  background-color: #fff;
   text-align: center;
   cursor: pointer;
   transition: 0.3s ease-in-out;
 
   &:hover {
-    box-shadow: 0 6px 12px rgba(0, 0, 0, 0.2);
+    box-shadow: 0 6px 18px rgba(0, 0, 0, 0.2);
     transform: scale(1.05);
   }
 `;
 
 const ImageContainer = styled.div`
-  height: 200px;
+  height: 220px;
   width: 100%;
   overflow: hidden;
   border-radius: 10px;
-  margin-bottom: 10px;
+  margin-bottom: 15px;
 
   img {
     width: 100%;
@@ -313,19 +334,26 @@ const LorryDetails = styled.div`
   color: #333;
 
   div {
-    margin: 5px 0;
+    margin: 8px 0;
   }
+`;
+
+const OwnerPhoneText = styled.div`
+  font-size: 16px;
+  font-weight: bold;
+  color: #4caf50;
+  margin-bottom: 10px;
 `;
 
 const DeleteButton = styled.button`
   background-color: #f44336;
   color: white;
   border: none;
-  padding: 5px 10px;
+  padding: 8px 12px;
   border-radius: 5px;
   cursor: pointer;
   font-size: 14px;
-  margin-top: 10px;
+  margin-top: 15px;
 
   &:hover {
     background-color: #e57373;

@@ -1,70 +1,107 @@
-const db = require('../config/db');
+const db = require("../config/db");
 
 const Employee = {
-  // Create a new employee record
-  createEmployee: (lorryId, name, role, fixedSalary, salaryPerDay, callback) => {
-    const query = 'INSERT INTO Employees (lorry_id, name, role, fixed_salary, salary_per_day) VALUES (?, ?, ?, ?, ?)';
-    db.execute(query, [lorryId, name, role, fixedSalary, salaryPerDay], (err, results) => {
+  // Check if the lorry exists in the lorries table
+  checkLorryExists: (lorry_id, callback) => {
+    const query = "SELECT * FROM lorries WHERE id = ?";
+    db.query(query, [lorry_id], (err, results) => {
       if (err) {
-        console.error('Error creating employee:', err);
-        return callback(err);
+        console.error("Error checking lorry:", err);
+        return callback(err, null);
       }
-      callback(null, results);
+      if (results.length === 0) {
+        return callback("Lorry ID does not exist.", null);  // Lorry does not exist
+      }
+      callback(null, results);  // Lorry exists
     });
   },
 
-  // Get all employees for a particular lorry by its registration number
-  getEmployeesByLorry: (registrationNumber, callback) => {
+  // Add a new employee
+  addEmployee: (data, callback) => {
+    console.log("Adding employee with data:", data);  // Log incoming data
+
+    // First, check if the lorry exists
+    Employee.checkLorryExists(data.lorry_id, (err, result) => {
+      if (err) {
+        return callback(err, null);  // Return the error if lorry doesn't exist
+      }
+
+      // Proceed to insert the employee
+      const query = "INSERT INTO employees (lorry_id, name, phone, role, fixed_salary) VALUES (?, ?, ?, ?, ?)";
+      db.query(query, [data.lorry_id, data.name, data.phone, data.role, data.fixed_salary], (err, result) => {
+        if (err) {
+          console.error("Error adding employee:", err);  // Log error
+          return callback(err, null);
+        }
+        console.log("Employee added successfully:", result);  // Log success
+        callback(null, result);  // Return result on success
+      });
+    });
+  },
+
+  // Get all employees
+  findAll: (callback) => {
+    const query = "SELECT * FROM employees";
+    db.query(query, (err, results) => {
+      if (err) {
+        console.error("Error fetching employees:", err);
+        return callback(err, null);
+      }
+      callback(null, results);  // Return all employees
+    });
+  },
+
+  // Find an employee by phone number
+  findByPhone: (phone, callback) => {
+    const query = "SELECT * FROM employees WHERE phone = ?";
+    db.query(query, [phone], (err, result) => {
+      if (err) {
+        console.error("Error fetching employee by phone:", err);
+        return callback(err, null);
+      }
+      callback(null, result);  // Return employee data
+    });
+  },
+
+  // Update monthly data in Salary table
+  updateMonthlyData: (phone, month, year, daysWorked, expense, callback) => {
     const query = `
-      SELECT e.*, l.registration_number
-      FROM Employees e
-      JOIN Lorries l ON e.lorry_id = l.id
-      WHERE l.registration_number = ?
+      UPDATE salary
+      SET days_worked = ?, expense = ?
+      WHERE employee_phone = ? AND month = ? AND year = ?
     `;
-    db.execute(query, [registrationNumber], (err, results) => {
+    db.query(query, [daysWorked, expense, phone, month, year], (err, result) => {
       if (err) {
-        console.error('Error fetching employees:', err);
-        return callback(err);
+        console.error("Error updating salary data:", err);
+        return callback(err, null);
       }
-      callback(null, results);
+      callback(null, result);  // Return result if update is successful
     });
   },
 
-  // Update employee salary or details
-  updateEmployeeSalary: (employeeId, newSalary, callback) => {
-    const query = 'UPDATE Employees SET fixed_salary = ? WHERE id = ?';
-    db.execute(query, [newSalary, employeeId], (err, results) => {
+  // Retrieve the annual summary for an employee
+  getAnnualSummary: (phone, year, callback) => {
+    const query = `
+      SELECT 
+        e.name AS employee_name,
+        e.phone AS employee_phone,
+        SUM(s.days_worked) AS total_days_worked,
+        SUM(s.expense) AS total_expense,
+        SUM(s.earnings) AS total_earnings,
+        SUM(s.remaining_amount) AS total_remaining_amount
+      FROM salary s
+      JOIN employees e ON s.employee_phone = e.phone
+      WHERE s.employee_phone = ? AND s.year = ?
+      GROUP BY e.name, e.phone
+    `;
+    db.query(query, [phone, year], (err, result) => {
       if (err) {
-        console.error('Error updating employee salary:', err);
-        return callback(err);
+        console.error("Error fetching annual summary:", err);
+        return callback(err, null);
       }
-      callback(null, results);
+      callback(null, result);  // Return the summary data
     });
-  },
-
-  // Delete an employee record
-  deleteEmployee: (employeeId, callback) => {
-    const query = 'DELETE FROM Employees WHERE id = ?';
-    db.execute(query, [employeeId], (err, results) => {
-      if (err) {
-        console.error('Error deleting employee:', err);
-        return callback(err);
-      }
-      callback(null, results);
-    });
-  },
-
-  // Get a specific employee by their ID
-  getEmployeeById: (employeeId, callback) => {
-    const query = 'SELECT * FROM Employees WHERE id = ?';
-    db.execute(query, [employeeId], (err, results) => {
-      if (err) {
-        console.error('Error fetching employee by ID:', err);
-        return callback(err);
-      }
-      callback(null, results);
-    });
-  },
+  }
 };
 
 module.exports = Employee;

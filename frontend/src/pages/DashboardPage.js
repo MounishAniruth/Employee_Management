@@ -4,7 +4,7 @@ import axios from "axios";
 import styled from "styled-components";
 
 const DashboardPage = () => {
-  const { registrationNumber } = useParams();
+  const { id } = useParams(); // 'id' should be the registration number
   const navigate = useNavigate();
 
   // State to hold the lorry details
@@ -14,7 +14,7 @@ const DashboardPage = () => {
     // Fetch lorry details when the component mounts
     const fetchLorry = async () => {
       try {
-        const response = await axios.get(`http://localhost:5001/api/lorry/${registrationNumber}`);
+        const response = await axios.get(`http://localhost:5001/api/lorry/${id}`); // 'id' is registration number
         setLorry(response.data); // Set the fetched lorry data
       } catch (error) {
         console.error("Error fetching lorry details:", error);
@@ -22,22 +22,22 @@ const DashboardPage = () => {
     };
 
     fetchLorry();
-  }, [registrationNumber]); // Dependency on registrationNumber to refetch if it changes
+  }, [id]); // Dependency on registrationNumber to refetch if it changes
 
   if (!lorry) {
     return <LoadingMessage>Loading...</LoadingMessage>; // Show loading message while fetching lorry details
   }
 
   const handleEmployeePage = () => {
-    navigate(`/employee/${registrationNumber}`);
+    navigate(`/employee/${id}`);
   };
 
   const handleFuelPage = () => {
-    navigate(`/fuel/${registrationNumber}`);
+    navigate(`/fuel/${id}`);
   };
 
   const handlePointDetailsPage = () => {
-    navigate(`/point-details/${registrationNumber}`);
+    navigate(`/point-details/${id}`);
   };
 
   return (

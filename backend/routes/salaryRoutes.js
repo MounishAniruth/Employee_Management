@@ -1,113 +1,119 @@
 const express = require("express");
 const router = express.Router();
-const db = require("../config/db");
+const Salary = require("../models/Salary");
+const Employee = require("../models/Employee");
 
-// Route to add a salary record
-router.post("/add", (req, res) => {
-  const { employee_id, month, year, salary_per_day, days_worked, expense } = req.body;
+// POST /add/:phone - Add a new salary record for the employee identified by phone
+router.post("/add/:phone", async (req, res) => {
+  const { phone } = req.params;
+  const { startDate, endDate, expense } = req.body;
 
-  if (!employee_id || !month || !year || !salary_per_day || !days_worked) {
-    return res.status(400).json({ error: "All fields are required" });
+  if (!startDate || !endDate || !expense) {
+    return res.status(400).json({ error: "Start Date, End Date, and Expense are required" });
   }
 
-  // Calculate earned automatically, based on salary_per_day and days_worked
-  const earned = salary_per_day * days_worked;
+  try {
+    // Check if employee exists using their phone number
+    const employee = await new Promise((resolve, reject) => {
+      Employee.findByPhone(phone, (err, employee) => {
+        if (err || !employee) reject("Employee not found");
+        resolve(employee);
+      });
+    });
 
-  const query = "INSERT INTO employee_salaries (employee_id, month, year, salary_per_day, days_worked, expense, earned) VALUES (?, ?, ?, ?, ?, ?, ?)";
+    // Check if salary already exists for this period
+    const result = await new Promise((resolve, reject) => {
+      Salary.getSalaryByEmployeePhone(phone, (err, result) => {
+        if (err) reject("Error checking salary records");
+        resolve(result);
+      });
+    });
 
-  db.query(query, [employee_id, month, year, salary_per_day, days_worked, expense, earned], (err, result) => {
-    if (err) {
-      return res.status(500).json({ error: "Error adding salary record" });
+    // Check if salary exists within the date range
+    const existingSalary = result.find(
+      (salary) =>
+        (startDate >= salary.start_date && startDate <= salary.end_date) ||
+        (endDate >= salary.start_date && endDate <= salary.end_date)
+    );
+    if (existingSalary) {
+      return res.status(400).json({ error: "Salary record already exists for this period" });
     }
-    res.status(200).json({ message: "Salary record added successfully", salary: result });
-  });
+
+    // Add salary record
+    const addResult = await new Promise((resolve, reject) => {
+      Salary.addSalary(phone, { startDate, endDate, expense }, (err, result) => {
+        if (err) reject("Error adding salary record");
+        resolve(result);
+      });
+    });
+
+    res.status(201).json({ message: "Salary record added successfully", result: addResult });
+  } catch (err) {
+    res.status(500).json({ error: err });
+  }
 });
 
-// Route to update a salary record
-router.put("/update", (req, res) => {
-  const { employee_id, month, year, days_worked, expense } = req.body;
+// GET /:phone - Retrieve salary records for the employee identified by phone
+router.get("/:phone", async (req, res) => {
+  const { phone } = req.params;
 
-  if (!employee_id || !month || !year || !days_worked) {
-    return res.status(400).json({ error: "All fields are required" });
-  }
+  try {
+    // Check if employee exists using their phone number
+    const employee = await new Promise((resolve, reject) => {
+      Employee.findByPhone(phone, (err, employee) => {
+        if (err || !employee) reject("Employee not found");
+        resolve(employee);
+      });
+    });
 
-  // Recalculate earned value based on days worked
-  const queryFindSalary = "SELECT salary_per_day FROM employee_salaries WHERE employee_id = ? AND month = ? AND year = ?";
-  
-  db.query(queryFindSalary, [employee_id, month, year], (err, result) => {
-    if (err) {
-      return res.status(500).json({ error: "Error fetching salary record" });
-    }
+    // Retrieve salary records
+    const result = await new Promise((resolve, reject) => {
+      Salary.getSalaryByEmployeePhone(phone, (err, result) => {
+        if (err) reject("Error fetching salary record");
+        resolve(result);
+      });
+    });
+
     if (result.length === 0) {
-      return res.status(404).json({ error: "Salary record not found" });
-    }
-    const salary_per_day = result[0].salary_per_day;
-    const earned = salary_per_day * days_worked;
-
-    const queryUpdateSalary = "UPDATE employee_salaries SET days_worked = ?, expense = ?, earned = ? WHERE employee_id = ? AND month = ? AND year = ?";
-    
-    db.query(queryUpdateSalary, [days_worked, expense, earned, employee_id, month, year], (err, result) => {
-      if (err) {
-        return res.status(500).json({ error: "Error updating salary record" });
-      }
-      res.status(200).json({ message: "Salary record updated successfully", salary: result });
-    });
-  });
-});
-
-// Route to fetch salary records by employee ID
-router.get("/employee/:id/details", (req, res) => {
-  const { id } = req.params;
-
-  const querySalaries = "SELECT * FROM employee_salaries WHERE employee_id = ?";
-  const queryExpenses = "SELECT * FROM employee_expenses WHERE employee_id = ?";
-
-  db.query(querySalaries, [id], (err, salaries) => {
-    if (err) {
-      return res.status(500).json({ error: "Error fetching salary records" });
+      return res.status(404).json({ message: "Salary record not found" });
     }
 
-    db.query(queryExpenses, [id], (err, expenses) => {
-      if (err) {
-        return res.status(500).json({ error: "Error fetching expense records" });
-      }
-
-      res.json({ salaries, expenses });
-    });
-  });
+    res.status(200).json(result);
+  } catch (err) {
+    res.status(500).json({ error: err });
+  }
 });
 
+// PUT /update/:phone - Update salary details for an employee identified by phone
+router.put("/update/:phone", async (req, res) => {
+  const { phone } = req.params;
+  const { startDate, endDate, expense } = req.body;
 
-// Route to add an expense record for an employee
-router.post("/expense/add", (req, res) => {
-  const { employee_id, expense_date, amount } = req.body;
-
-  if (!employee_id || !expense_date || !amount) {
-    return res.status(400).json({ error: "All fields are required" });
+  if (!startDate || !endDate || !expense) {
+    return res.status(400).json({ error: "Start Date, End Date, and Expense are required" });
   }
 
-  const query = "INSERT INTO employee_expenses (employee_id, expense_date, amount) VALUES (?, ?, ?)";
+  try {
+    // Check if employee exists using their phone number
+    const employee = await new Promise((resolve, reject) => {
+      Employee.findByPhone(phone, (err, employee) => {
+        if (err || !employee) reject("Employee not found");
+        resolve(employee);
+      });
+    });
 
-  db.query(query, [employee_id, expense_date, amount], (err, result) => {
-    if (err) {
-      return res.status(500).json({ error: "Error adding expense record" });
-    }
-    res.status(200).json({ message: "Expense record added successfully", expense: result });
-  });
-});
+    // Update salary details
+    const result = await new Promise((resolve, reject) => {
+      Salary.updateSalaryDetails(phone, { startDate, endDate, expense }, (err, result) => {
+        if (err) reject("Error updating salary record");
+        resolve(result);
+      });
+    });
 
-// Route to fetch all expenses for an employee
-router.get("/employee/:id/expenses", (req, res) => {
-  const { id } = req.params;
-
-  const query = "SELECT * FROM employee_expenses WHERE employee_id = ?";
-
-  db.query(query, [id], (err, results) => {
-    if (err) {
-      return res.status(500).json({ error: "Error fetching expense records" });
-    }
-    res.json(results);
-  });
+    res.status(200).json({ message: "Salary record updated successfully", result });
+  } catch (err) {
+    res.status(500).json({ error: err });
+  }
 });
 
 module.exports = router;

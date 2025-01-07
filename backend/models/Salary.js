@@ -1,114 +1,61 @@
 const db = require("../config/db");
 
 const Salary = {
-  // Add a salary record for an employee
-  addSalary: (data, callback) => {
-    if (!data.employee_id || !data.month || !data.year || !data.salary_per_day || !data.days_worked) {
-      return callback(new Error("Missing required fields for adding salary"), null);
-    }
+  // Add a new salary record for an employee
+  addSalary: (employeePhone, { startDate, endDate, expense }, callback) => {
+    const daysWorked = Salary.calculateDaysWorked(startDate, endDate);
 
+    // Query to insert a new salary record
     const query = `
-      INSERT INTO employee_salaries (employee_id, month, year, salary_per_day, days_worked, expense)
-      VALUES (?, ?, ?, ?, ?, ?)
+      INSERT INTO employee_salaries (employee_id, start_date, end_date, expense_paid, days_worked)
+      VALUES ((SELECT id FROM employees WHERE phone = ?), ?, ?, ?, ?)
     `;
-    db.query(
-      query,
-      [data.employee_id, data.month, data.year, data.salary_per_day, data.days_worked, data.expense || 0],
-      (err, result) => {
-        if (err) {
-          console.error("Error adding salary:", err);
-          return callback(err, null);
-        }
-        callback(null, result);
-      }
-    );
-  },
-
-  // Update a salary record
-  updateSalary: (data, callback) => {
-    if (!data.employee_id || !data.month || !data.year || data.days_worked === undefined || data.expense === undefined) {
-      return callback(new Error("Missing required fields for updating salary"), null);
-    }
-
-    const query = `
-      UPDATE employee_salaries 
-      SET days_worked = ?, expense = ?
-      WHERE employee_id = ? AND month = ? AND year = ?
-    `;
-    db.query(
-      query,
-      [data.days_worked, data.expense, data.employee_id, data.month, data.year],
-      (err, result) => {
-        if (err) {
-          console.error("Error updating salary:", err);
-          return callback(err, null);
-        }
-        callback(null, result);
-      }
-    );
-  },
-
-  // Fetch salary records by employee ID
-  findByEmployee: (employee_id, callback) => {
-    if (!employee_id) {
-      return callback(new Error("Employee ID is required to fetch salary records"), null);
-    }
-
-    const query = `
-      SELECT * FROM employee_salaries 
-      WHERE employee_id = ? 
-      ORDER BY year DESC, month DESC
-    `;
-    db.query(query, [employee_id], (err, results) => {
-      if (err) {
-        console.error("Error fetching salaries:", err);
-        return callback(err, null);
-      }
-      callback(null, results);
-    });
-  }
-};
-
-const Expense = {
-  // Add an expense record for an employee
-  addExpense: (data, callback) => {
-    if (!data.employee_id || !data.expense_date || !data.amount) {
-      return callback(new Error("Missing required fields for adding expense"), null);
-    }
-
-    const query = `
-      INSERT INTO employee_expenses (employee_id, expense_date, amount)
-      VALUES (?, ?, ?)
-    `;
-    db.query(query, [data.employee_id, data.expense_date, data.amount], (err, result) => {
-      if (err) {
-        console.error("Error adding expense:", err);
-        return callback(err, null);
-      }
+    
+    db.query(query, [employeePhone, startDate, endDate, expense, daysWorked], (err, result) => {
+      if (err) return callback("Error adding salary record.", null);
       callback(null, result);
     });
   },
 
-  // Fetch expenses by employee ID (Optional Extension)
-  findByEmployee: (employee_id, callback) => {
-    if (!employee_id) {
-      return callback(new Error("Employee ID is required to fetch expense records"), null);
-    }
-
+  // Get salary records for an employee by phone number
+  getSalaryByEmployeePhone: (employeePhone, callback) => {
     const query = `
-      SELECT * FROM employee_expenses 
-      WHERE employee_id = ? 
-      ORDER BY expense_date DESC
+      SELECT es.id, es.start_date, es.end_date, es.expense_paid, es.days_worked
+      FROM employee_salaries es
+      JOIN employees e ON es.employee_id = e.id
+      WHERE e.phone = ?
     `;
-    db.query(query, [employee_id], (err, results) => {
-      if (err) {
-        console.error("Error fetching expenses:", err);
-        return callback(err, null);
-      }
-      callback(null, results);
+    
+    db.query(query, [employeePhone], (err, result) => {
+      if (err) return callback("Error fetching salary records.", null);
+      callback(null, result);
     });
+  },
+
+  // Update existing salary record or insert a new one if not exists
+  updateSalaryDetails: (employeePhone, { startDate, endDate, expense }, callback) => {
+    const daysWorked = Salary.calculateDaysWorked(startDate, endDate);
+    
+    const query = `
+      INSERT INTO employee_salaries (employee_id, start_date, end_date, expense_paid, days_worked)
+      VALUES ((SELECT id FROM employees WHERE phone = ?), ?, ?, ?, ?)
+      ON DUPLICATE KEY UPDATE expense_paid = ?, days_worked = ?
+    `;
+    
+    db.query(query, [employeePhone, startDate, endDate, expense, daysWorked, expense, daysWorked], (err, result) => {
+      if (err) return callback("Error updating salary details.", null);
+      callback(null, result);
+    });
+  },
+
+  // Helper function to calculate the days worked between two dates
+  calculateDaysWorked: (startDate, endDate) => {
+    const start = new Date(startDate);
+    const end = new Date(endDate);
+    const diffTime = Math.abs(end - start);
+    const diffDays = Math.ceil(diffTime / (1000 * 60 * 60 * 24)) + 1; // +1 to include both start and end dates
+    return diffDays;
   }
 };
 
-// Export both models
-module.exports = { Salary, Expense };
+module.exports = Salary;

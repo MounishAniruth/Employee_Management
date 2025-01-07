@@ -1,81 +1,124 @@
 import React, { useState, useEffect, useCallback } from "react";
+import { useParams } from "react-router-dom";
 import axios from "axios";
 import styled from "styled-components";
-import { useParams } from "react-router-dom";
-import Card from "../components/Card";
 
 const EmployeePage = () => {
   const { id } = useParams();
-  const [employeeName, setEmployeeName] = useState("");
-  const [employeePhone, setEmployeePhone] = useState("");
-  const [employeeRole, setEmployeeRole] = useState("driver");
-  const [employeeSalary, setEmployeeSalary] = useState("");
+  const [employeeData, setEmployeeData] = useState({
+    name: "",
+    phone: "",
+    role: "driver",
+    salary: "",
+  });
   const [filteredEmployees, setFilteredEmployees] = useState([]);
   const [isFormVisible, setFormVisible] = useState(false);
-  const [selectedEmployee, setSelectedEmployee] = useState(null);
+  const [isUpdateFormVisible, setUpdateFormVisible] = useState(false);
+  const [selectedEmployeeDetails, setSelectedEmployeeDetails] = useState(null);
+  const [loading, setLoading] = useState(false);
 
-  const fetchEmployeesByRole = useCallback(async (role) => {
-    try {
-      const response = await axios.get(
-        `http://localhost:5001/api/employee/employeesByRole/${id}/${role}`
-      );
-      setFilteredEmployees(response.data);
-    } catch (error) {
-      console.error("Error fetching employees:", error);
-    }
-  }, [id]);
+  // New state variables for the update form
+  const [updatePhone, setUpdatePhone] = useState(""); // For displaying the phone number in the update form
+  const [updateStartDate, setUpdateStartDate] = useState("");
+  const [updateEndDate, setUpdateEndDate] = useState("");
+  const [expensePaid, setExpensePaid] = useState("");
+  const [employeeRole, setEmployeeRole] = useState("");
+
+  const fetchEmployeesByRole = useCallback(
+    async (role) => {
+      setLoading(true);
+      try {
+        const response = await axios.get(
+          `http://localhost:5001/api/employee/employeesByRole/${id}/${role}`
+        );
+        setFilteredEmployees(response.data);
+      } catch (error) {
+        console.error("Error fetching employees:", error);
+      } finally {
+        setLoading(false);
+      }
+    },
+    [id]
+  );
 
   const handleEmployeeClick = async (phone) => {
     try {
-      const response = await axios.get(
-        `http://localhost:5001/api/employee/${phone}`
-      );
-      setSelectedEmployee(response.data);
-    } catch (error) {
-      console.error("Error fetching employee details:", error);
+      const response = await axios.get(`http://localhost:5001/api/employee/details/${phone}`);
+      console.log("Employee details:", response.data);
+    } catch (err) {
+      console.error("Error fetching employee details:", err);
       alert("Error fetching employee details");
     }
   };
 
-  const addEmployee = async () => {
+  const handleUpdateEmployee = async () => {
     try {
-      const newEmployee = {
-        name: employeeName,
-        phone: employeePhone,
-        role: employeeRole,
-        fixed_salary: employeeSalary,
-        lorry_id: id,
+      const updateData = {
+        startDate: updateStartDate,
+        endDate: updateEndDate,
+        expense: expensePaid,
       };
-      await axios.post("http://localhost:5001/api/employee/add", newEmployee);
-      alert("Employee added successfully");
+
+      // Ensure the correct endpoint is being used
+      await axios.put(
+        `http://localhost:5001/api/employee/updateExpense/${updatePhone}`,
+        updateData
+      );
+
+      alert("Employee expense updated successfully!");
+      // Refresh the list or data as needed
       fetchEmployeesByRole(employeeRole);
-      setFormVisible(false);
+      setUpdateFormVisible(false); // Hide the form after successful update
     } catch (error) {
-      console.error("Error adding employee:", error);
-      alert("Error adding employee");
+      console.error("Error updating employee:", error);
+      alert("Failed to update employee.");
     }
   };
 
-  const handleDeleteEmployee = async (phone) => {
+  const deleteEmployee = async (phone) => {
+    setLoading(true);
     try {
-      await axios.delete(`http://localhost:5001/api/employee/${phone}`);
-      alert("Employee deleted successfully");
-      fetchEmployeesByRole(employeeRole);
-      setSelectedEmployee(null);
+      await axios.delete(`http://localhost:5001/api/employee/delete/${phone}`);
+      alert("Employee deleted successfully!");
+      fetchEmployeesByRole(employeeData.role); // Refresh the list
     } catch (error) {
       console.error("Error deleting employee:", error);
-      alert("Error deleting employee");
+      alert("Failed to delete employee.");
+    } finally {
+      setLoading(false);
+    }
+  };
+
+  const addEmployee = async () => {
+    if (!employeeData.name || !employeeData.phone || !employeeData.salary) {
+      alert("Please fill all fields.");
+      return;
+    }
+
+    setLoading(true);
+    try {
+      const newEmployee = {
+        lorry_id: id,
+        name: employeeData.name,
+        phone: employeeData.phone,
+        role: employeeData.role,
+        fixed_salary: Number(employeeData.salary),
+      };
+      await axios.post(`http://localhost:5001/api/employee/add`, newEmployee);
+      alert("Employee added successfully!");
+      fetchEmployeesByRole(employeeData.role); // Refresh the list
+      setFormVisible(false);
+    } catch (error) {
+      console.error("Error adding employee:", error);
+      alert("Failed to add employee.");
+    } finally {
+      setLoading(false);
     }
   };
 
   useEffect(() => {
-    fetchEmployeesByRole(employeeRole);
-  }, [employeeRole, id, fetchEmployeesByRole]);
-
-  const handleRoleChange = (role) => {
-    setEmployeeRole(role);
-    fetchEmployeesByRole(role);
-  };
+    fetchEmployeesByRole(employeeData.role);
+  }, [employeeData.role, id, fetchEmployeesByRole]);
 
   return (
     <Container>
@@ -83,27 +126,31 @@ const EmployeePage = () => {
         <LorryTitle>Lorry {id}</LorryTitle>
       </Header>
 
-      <Button onClick={() => setFormVisible(!isFormVisible)}>
-        {isFormVisible ? "Cancel" : "Add Employee"}
-      </Button>
+      <Button onClick={() => setFormVisible(true)}>Add Employee</Button>
 
       {isFormVisible && (
         <Form>
           <Input
             type="text"
             placeholder="Employee Name"
-            value={employeeName}
-            onChange={(e) => setEmployeeName(e.target.value)}
+            value={employeeData.name}
+            onChange={(e) =>
+              setEmployeeData({ ...employeeData, name: e.target.value })
+            }
           />
           <Input
             type="text"
             placeholder="Phone Number"
-            value={employeePhone}
-            onChange={(e) => setEmployeePhone(e.target.value)}
+            value={employeeData.phone}
+            onChange={(e) =>
+              setEmployeeData({ ...employeeData, phone: e.target.value })
+            }
           />
           <Select
-            value={employeeRole}
-            onChange={(e) => setEmployeeRole(e.target.value)}
+            value={employeeData.role}
+            onChange={(e) =>
+              setEmployeeData({ ...employeeData, role: e.target.value })
+            }
           >
             <option value="driver">Driver</option>
             <option value="driller">Driller</option>
@@ -113,61 +160,121 @@ const EmployeePage = () => {
           <Input
             type="number"
             placeholder="Fixed Salary"
-            value={employeeSalary}
-            onChange={(e) => setEmployeeSalary(e.target.value)}
+            value={employeeData.salary}
+            onChange={(e) =>
+              setEmployeeData({ ...employeeData, salary: e.target.value })
+            }
           />
-          <Button onClick={addEmployee}>Add Employee</Button>
+          <Button onClick={addEmployee} disabled={loading}>
+            {loading ? "Adding..." : "Add Employee"}
+          </Button>
+          <Button onClick={() => setFormVisible(false)}>Cancel</Button>
         </Form>
       )}
 
-      <EmployeeRoles>
-        <RoleTabs>
-          <Tab onClick={() => handleRoleChange("driver")}>Drivers</Tab>
-          <Tab onClick={() => handleRoleChange("driller")}>Drillers</Tab>
-          <Tab onClick={() => handleRoleChange("manager")}>Managers</Tab>
-          <Tab onClick={() => handleRoleChange("worker")}>Workers</Tab>
-        </RoleTabs>
-
-        <EmployeeList>
-          {filteredEmployees.length > 0 ? (
-            filteredEmployees.map((employee) => (
-              <EmployeeItem
-                key={employee.phone}
-                onClick={() => handleEmployeeClick(employee.phone)}
-              >
-                {employee.name} ({employee.phone})
-              </EmployeeItem>
-            ))
-          ) : (
-            <EmployeeItem>No employees found for this role.</EmployeeItem>
-          )}
-        </EmployeeList>
-      </EmployeeRoles>
-
-      {selectedEmployee && (
-        <EmployeeDetails>
-          <h3>
-            {selectedEmployee.name} ({selectedEmployee.phone})
-          </h3>
-          <CardGrid>
-            <Card title="Fixed Salary" content={selectedEmployee.fixed_salary} />
-            <Card title="Total Earned" content={selectedEmployee.total_earned} />
-            <Card title="Expense" content={selectedEmployee.expenses} />
-            <Card title="Remaining" content={selectedEmployee.remaining} />
-            <Card title="Days Worked" content={selectedEmployee.days_worked} />
-          </CardGrid>
-          <Button
-            onClick={() => handleDeleteEmployee(selectedEmployee.phone)}
+      {isUpdateFormVisible && (
+        <UpdateForm>
+          <Input
+            type="text"
+            placeholder="Phone Number"
+            value={updatePhone}
+            onChange={(e) => setUpdatePhone(e.target.value)}
+          />
+          <Input
+            type="date"
+            placeholder="Start Date"
+            value={updateStartDate}
+            onChange={(e) => setUpdateStartDate(e.target.value)}
+          />
+          <Input
+            type="date"
+            placeholder="End Date"
+            value={updateEndDate}
+            onChange={(e) => setUpdateEndDate(e.target.value)}
+          />
+          <Input
+            type="number"
+            placeholder="Expense Paid"
+            value={expensePaid}
+            onChange={(e) => setExpensePaid(e.target.value)}
+          />
+          <Select
+            value={employeeRole}
+            onChange={(e) => setEmployeeRole(e.target.value)}
           >
-            Delete Employee
+            <option value="driver">Driver</option>
+            <option value="helper">Helper</option>
+          </Select>
+          <Button onClick={handleUpdateEmployee} disabled={loading}>
+            {loading ? "Updating..." : "Update Employee"}
           </Button>
-        </EmployeeDetails>
+          <Button onClick={() => setUpdateFormVisible(false)}>Cancel</Button>
+        </UpdateForm>
+      )}
+
+      <RoleTabs>
+        {["driver", "driller", "manager", "worker"].map((role) => (
+          <Tab
+            key={role}
+            onClick={() => setEmployeeData({ ...employeeData, role })}
+            $active={employeeData.role === role}
+          >
+            {role.charAt(0).toUpperCase() + role.slice(1)}
+          </Tab>
+        ))}
+      </RoleTabs>
+
+      {loading ? (
+        <p>Loading...</p>
+      ) : (
+        <EmployeeList>
+          {filteredEmployees.map((employee) => (
+            <EmployeeItem key={employee.phone}>
+              <div onClick={() => handleEmployeeClick(employee.phone)}>
+                {employee.name} ({employee.phone})
+              </div>
+              <Button onClick={() => handleEmployeeClick(employee.phone)}>
+                Details
+              </Button>
+              <Button onClick={() => deleteEmployee(employee.phone)}>Delete</Button>
+              <Button onClick={() => setUpdateFormVisible(true)}>
+                Update
+              </Button>
+            </EmployeeItem>
+          ))}
+        </EmployeeList>
+      )}
+
+      {selectedEmployeeDetails && (
+        <DetailsTable>
+          <thead>
+            <tr>
+              <th>Name</th>
+              <th>Phone</th>
+              <th>Start Date</th>
+              <th>End Date</th>
+              <th>Expense</th>
+            </tr>
+          </thead>
+          <tbody>
+            {selectedEmployeeDetails.salaryRecords.map((record, index) => (
+              <tr key={index}>
+                <td>{selectedEmployeeDetails.name}</td>
+                <td>{selectedEmployeeDetails.phone}</td>
+                <td>{record.startDate}</td>
+                <td>{record.endDate}</td>
+                <td>{record.expense}</td>
+              </tr>
+            ))}
+          </tbody>
+        </DetailsTable>
       )}
     </Container>
   );
 };
 
 export default EmployeePage;
+
 
 // Styled Components
 const Container = styled.div`
@@ -196,85 +303,89 @@ const Button = styled.button`
   border: none;
   border-radius: 5px;
   cursor: pointer;
-  margin-top: 20px;
+  margin-top: 10px;
 
   &:hover {
     background-color: #45a049;
   }
+
+  &:disabled {
+    background-color: #ccc;
+    cursor: not-allowed;
+  }
 `;
 
 const Form = styled.div`
-  background-color: #ffffff;
-  padding: 20px;
+  display: flex;
+  flex-direction: column;
   margin-top: 20px;
-  box-shadow: 0 4px 6px rgba(0, 0, 0, 0.1);
 `;
 
 const Input = styled.input`
-  width: 100%;
   padding: 10px;
-  margin: 10px 0;
+  margin: 5px 0;
   border: 1px solid #ccc;
   border-radius: 5px;
 `;
 
 const Select = styled.select`
-  width: 100%;
   padding: 10px;
-  margin: 10px 0;
+  margin: 5px 0;
   border: 1px solid #ccc;
   border-radius: 5px;
-`;
-
-const EmployeeRoles = styled.div`
-  margin-top: 30px;
 `;
 
 const RoleTabs = styled.div`
   display: flex;
   justify-content: center;
-  margin-bottom: 20px;
+  margin-top: 20px;
 `;
 
 const Tab = styled.div`
   padding: 10px 20px;
   margin: 0 10px;
   cursor: pointer;
-  background-color: #f0f0f0;
+  background-color: ${({ $active }) => ($active ? "#4caf50" : "#ccc")};
+  color: white;
   border-radius: 5px;
-  font-weight: bold;
-
-  &:hover {
-    background-color: #ddd;
-  }
 `;
 
-const EmployeeList = styled.ul`
-  list-style-type: none;
-  padding: 0;
-`;
-
-const EmployeeItem = styled.li`
-  font-size: 1rem;
-  padding: 5px;
-  border-bottom: 1px solid #ccc;
-  cursor: pointer;
-
-  &:hover {
-    background-color: #f4f4f9;
-  }
-`;
-
-const EmployeeDetails = styled.div`
-  background-color: #fff;
-  padding: 20px;
-  box-shadow: 0 4px 6px rgba(0, 0, 0, 0.1);
+const EmployeeList = styled.div`
   margin-top: 20px;
 `;
 
-const CardGrid = styled.div`
-  display: grid;
-  grid-template-columns: repeat(3, 1fr);
-  gap: 20px;
+const EmployeeItem = styled.div`
+  display: flex;
+  justify-content: space-between;
+  padding: 10px;
+  background-color: white;
+  margin-bottom: 10px;
+  border-radius: 5px;
+  box-shadow: 0 2px 5px rgba(0, 0, 0, 0.1);
+
+  button {
+    margin-left: 10px;
+  }
+`;
+
+const UpdateForm = styled.div`
+  display: flex;
+  flex-direction: column;
   margin-top: 20px;
 `;
+
+const DetailsTable = styled.table`
+  width: 100%;
+  margin-top: 20px;
+  border-collapse: collapse;
+
+  th, td {
+    padding: 10px;
+    border: 1px solid #ddd;
+  }
+
+  th {
+    background-color: #f4f7fc;
+  }
+`;
+

@@ -20,7 +20,7 @@ app.use(bodyParser.json());
 app.use('/api/auth', authRoutes);           // Authentication routes
 app.use('/api/lorry', lorryRoutes);         // Lorry routes
 app.use('/api/employee', employeeRoutes);   // Employee management routes
-app.use('/api/salary', salaryRoutes);       // Salary management routes
+app.use('/api/salaries', salaryRoutes);       // Salary management routes
 
 // Health check route
 app.get('/api/health', (req, res) => {

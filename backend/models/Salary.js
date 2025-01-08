@@ -1,61 +1,54 @@
 const db = require("../config/db");
 
-const Salary = {
-  // Add a new salary record for an employee
-  addSalary: (employeePhone, { startDate, endDate, expense }, callback) => {
-    const daysWorked = Salary.calculateDaysWorked(startDate, endDate);
-
-    // Query to insert a new salary record
+const SalaryModel = {
+  // Add a new salary record
+  async addSalaryRecord(employeeId, startDate, endDate, expensePaid) {
     const query = `
-      INSERT INTO employee_salaries (employee_id, start_date, end_date, expense_paid, days_worked)
-      VALUES ((SELECT id FROM employees WHERE phone = ?), ?, ?, ?, ?)
+      INSERT INTO employee_salaries (employee_id, start_date, end_date, expense_paid)
+      VALUES (?, ?, ?, ?)
     `;
-    
-    db.query(query, [employeePhone, startDate, endDate, expense, daysWorked], (err, result) => {
-      if (err) return callback("Error adding salary record.", null);
-      callback(null, result);
-    });
+    const [result] = await db.query(query, [employeeId, startDate, endDate, expensePaid]);
+    return result.insertId;
   },
 
-  // Get salary records for an employee by phone number
-  getSalaryByEmployeePhone: (employeePhone, callback) => {
+  // Fetch salary records for an employee with days worked calculated
+  getSalaryRecordsByEmployee(employeeId, callback) {
     const query = `
-      SELECT es.id, es.start_date, es.end_date, es.expense_paid, es.days_worked
+      SELECT es.id, es.start_date, es.end_date, 
+             DATEDIFF(es.end_date, es.start_date) AS days_worked, 
+             es.expense_paid,
+             e.name
       FROM employee_salaries es
       JOIN employees e ON es.employee_id = e.id
-      WHERE e.phone = ?
+      WHERE es.employee_id = ?
     `;
-    
-    db.query(query, [employeePhone], (err, result) => {
-      if (err) return callback("Error fetching salary records.", null);
-      callback(null, result);
+  
+    db.query(query, [employeeId], (err, rows) => {
+      if (err) {
+        return callback(err, null);
+      }
+      callback(null, rows);
     });
   },
 
-  // Update existing salary record or insert a new one if not exists
-  updateSalaryDetails: (employeePhone, { startDate, endDate, expense }, callback) => {
-    const daysWorked = Salary.calculateDaysWorked(startDate, endDate);
-    
+  async updateSalaryRecord(salaryId, startDate, endDate, expensePaid) {
     const query = `
-      INSERT INTO employee_salaries (employee_id, start_date, end_date, expense_paid, days_worked)
-      VALUES ((SELECT id FROM employees WHERE phone = ?), ?, ?, ?, ?)
-      ON DUPLICATE KEY UPDATE expense_paid = ?, days_worked = ?
+      UPDATE employee_salaries
+      SET start_date = ?, end_date = ?, expense_paid = ?
+      WHERE id = ?
     `;
-    
-    db.query(query, [employeePhone, startDate, endDate, expense, daysWorked, expense, daysWorked], (err, result) => {
-      if (err) return callback("Error updating salary details.", null);
-      callback(null, result);
-    });
+    const [result] = await db.query(query, [startDate, endDate, expensePaid, salaryId]);
+    return result.affectedRows;
   },
 
-  // Helper function to calculate the days worked between two dates
-  calculateDaysWorked: (startDate, endDate) => {
-    const start = new Date(startDate);
-    const end = new Date(endDate);
-    const diffTime = Math.abs(end - start);
-    const diffDays = Math.ceil(diffTime / (1000 * 60 * 60 * 24)) + 1; // +1 to include both start and end dates
-    return diffDays;
-  }
+  async deleteSalaryRecord(salaryId) {
+    const query = `
+      DELETE FROM employee_salaries
+      WHERE id = ?
+    `;
+    const [result] = await db.query(query, [salaryId]);
+    return result.affectedRows;
+  },
 };
 
-module.exports = Salary;
+module.exports = SalaryModel;

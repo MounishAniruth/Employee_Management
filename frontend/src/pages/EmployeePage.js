@@ -43,12 +43,34 @@ const EmployeePage = () => {
 
   const handleEmployeeClick = async (phone) => {
     try {
-      const response = await axios.get(`http://localhost:5001/api/employee/details/${phone}`);
-      console.log("Employee details:", response.data);
+      const employeeResponse = await axios.get(
+        `http://localhost:5001/api/employee/details/${phone}`
+      );
+      console.log("Employee details:", employeeResponse.data);
+
+      const salaryResponse = await axios.get(
+        `http://localhost:5001/api/salary/${phone}`
+      );
+      console.log("Salary records:", salaryResponse.data);
+
+      // Combine employee details and salary records
+      const employeeDetails = {
+        ...employeeResponse.data,
+        salaryRecords: salaryResponse.data,
+      };
+
+      setSelectedEmployeeDetails(employeeDetails);
     } catch (err) {
       console.error("Error fetching employee details:", err);
       alert("Error fetching employee details");
     }
+  };
+
+  const calculateDaysWorked = (startDate, endDate) => {
+    const start = new Date(startDate);
+    const end = new Date(endDate);
+    const timeDifference = end - start;
+    return timeDifference / (1000 * 3600 * 24); // Convert milliseconds to days
   };
 
   const handleUpdateEmployee = async () => {
@@ -66,8 +88,6 @@ const EmployeePage = () => {
       );
 
       alert("Employee expense updated successfully!");
-      // Refresh the list or data as needed
-      fetchEmployeesByRole(employeeRole);
       setUpdateFormVisible(false); // Hide the form after successful update
     } catch (error) {
       console.error("Error updating employee:", error);
@@ -236,45 +256,59 @@ const EmployeePage = () => {
               <Button onClick={() => handleEmployeeClick(employee.phone)}>
                 Details
               </Button>
-              <Button onClick={() => deleteEmployee(employee.phone)}>Delete</Button>
-              <Button onClick={() => setUpdateFormVisible(true)}>
-                Update
+              <Button onClick={() => deleteEmployee(employee.phone)}>
+                Delete
               </Button>
+              <Button onClick={() => setUpdateFormVisible(true)}>Update</Button>
             </EmployeeItem>
           ))}
         </EmployeeList>
       )}
 
-      {selectedEmployeeDetails && (
-        <DetailsTable>
-          <thead>
-            <tr>
-              <th>Name</th>
-              <th>Phone</th>
-              <th>Start Date</th>
-              <th>End Date</th>
-              <th>Expense</th>
+{selectedEmployeeDetails && (
+  <DetailsTable>
+    <thead>
+      <tr>
+        <th>Name</th>
+        <th>Phone</th>
+        <th>Start Date</th>
+        <th>End Date</th>
+        <th>Expense</th>
+        <th>Days Worked</th> 
+      </tr>
+    </thead>
+    <tbody>
+      {selectedEmployeeDetails.salaryRecords &&
+      selectedEmployeeDetails.salaryRecords.length > 0 ? (
+        selectedEmployeeDetails.salaryRecords.map((record, index) => {
+          const daysWorked = calculateDaysWorked(
+            record.start_date,
+            record.end_date
+          );
+          return (
+            <tr key={index}>
+              <td>{selectedEmployeeDetails.name}</td>
+              <td>{selectedEmployeeDetails.phone}</td>
+              <td>{record.start_date}</td>
+              <td>{record.end_date}</td>
+              <td>{record.expense_paid}</td>
+              <td>{daysWorked} days</td> 
             </tr>
-          </thead>
-          <tbody>
-            {selectedEmployeeDetails.salaryRecords.map((record, index) => (
-              <tr key={index}>
-                <td>{selectedEmployeeDetails.name}</td>
-                <td>{selectedEmployeeDetails.phone}</td>
-                <td>{record.startDate}</td>
-                <td>{record.endDate}</td>
-                <td>{record.expense}</td>
-              </tr>
-            ))}
-          </tbody>
-        </DetailsTable>
+          );
+        })
+      ) : (
+        <tr>
+          <td colSpan="6">No salary records available</td>
+        </tr>
       )}
+    </tbody>
+  </DetailsTable>
+)}
     </Container>
   );
 };
 
 export default EmployeePage;
-
 
 // Styled Components
 const Container = styled.div`
@@ -379,7 +413,8 @@ const DetailsTable = styled.table`
   margin-top: 20px;
   border-collapse: collapse;
 
-  th, td {
+  th,
+  td {
     padding: 10px;
     border: 1px solid #ddd;
   }
@@ -388,4 +423,3 @@ const DetailsTable = styled.table`
     background-color: #f4f7fc;
   }
 `;
-

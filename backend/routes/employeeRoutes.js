@@ -1,10 +1,8 @@
-
 const express = require("express");
 const db = require("../config/db");
 const router = express.Router();
 const Employee = require("../models/Employee");
 
-// Add a new employee
 // Add a new employee
 router.post("/add", (req, res) => {
   const { name, phone, role, fixed_salary, lorry_id } = req.body;
@@ -102,32 +100,32 @@ router.put("/updateExpense/:phone", async (req, res) => {
 
 
 // Delete employee by phone
-router.delete('/employee/:phone', async (req, res) => {
+router.delete("/delete/:phone", async (req, res) => {
   const { phone } = req.params;
 
   try {
-    const employee = await new Promise((resolve, reject) => {
-      Employee.findByPhone(phone, (err, employee) => {
-        if (err || !employee) reject("Employee not found");
-        resolve(employee);
+    // Query to delete the employee by phone
+    const query = "DELETE FROM employees WHERE phone = ?";
+    const result = await new Promise((resolve, reject) => {
+      db.query(query, [phone], (err, result) => {
+        if (err) reject(err);
+        resolve(result);
       });
     });
 
-    const [result] = await db.execute('DELETE FROM employees WHERE phone = ?', [phone]);
-
     if (result.affectedRows === 0) {
-      return res.status(404).json({ error: 'Employee not found' });
+      return res.status(404).json({ error: "Employee not found" });
     }
 
-    res.status(200).json({ message: 'Employee deleted successfully' });
-  } catch (error) {
-    console.error("Error deleting employee:", error);
-    res.status(500).json({ error: 'Internal Server Error' });
+    res.status(200).json({ message: "Employee deleted successfully" });
+  } catch (err) {
+    res.status(500).json({ error: "Error deleting employee" });
   }
 });
 
+
 // Get employee details by phone number
-router.get("/api/employee/:phone", async (req, res) => {
+router.get("/details/:phone", async (req, res) => {
   const { phone } = req.params;
 
   try {
@@ -143,5 +141,6 @@ router.get("/api/employee/:phone", async (req, res) => {
     res.status(500).json({ error: err });
   }
 });
+
 
 module.exports = router;

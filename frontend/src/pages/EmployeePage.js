@@ -24,6 +24,9 @@ const EmployeePage = () => {
   const [expensePaid, setExpensePaid] = useState("");
   const [employeeRole, setEmployeeRole] = useState("");
 
+  // New state to handle toggling between table and card view
+  const [showTableView, setShowTableView] = useState(false); 
+
   const fetchEmployeesByRole = useCallback(
     async (role) => {
       setLoading(true);
@@ -41,29 +44,64 @@ const EmployeePage = () => {
     [id]
   );
 
-  const handleEmployeeClick = async (phone) => {
+  const handleEmployeeNameClick = async (phone) => {
     try {
       const employeeResponse = await axios.get(
         `http://localhost:5001/api/employee/details/${phone}`
       );
-      console.log("Employee details:", employeeResponse.data);
-
+      
       const salaryResponse = await axios.get(
         `http://localhost:5001/api/salary/${phone}`
       );
-      console.log("Salary records:", salaryResponse.data);
-
-      // Combine employee details and salary records
+  
       const employeeDetails = {
         ...employeeResponse.data,
         salaryRecords: salaryResponse.data,
       };
-
-      setSelectedEmployeeDetails(employeeDetails);
+  
+      // Calculate total metrics
+      const totalMetrics = calculateTotalMetrics(employeeDetails);
+      
+      setSelectedEmployeeDetails({
+        ...employeeDetails,
+        metrics: totalMetrics,
+      });
     } catch (err) {
       console.error("Error fetching employee details:", err);
       alert("Error fetching employee details");
     }
+  };
+
+  const calculateTotalMetrics = (employeeDetails) => {
+    if (!employeeDetails.salaryRecords || employeeDetails.salaryRecords.length === 0) {
+      return {
+        totalExpense: 0,
+        totalDays: 0,
+        earnedMoney: 0,
+        remainingAmount: 0,
+      };
+    }
+
+    const totalExpense = employeeDetails.salaryRecords.reduce(
+      (sum, record) => sum + parseFloat(record.expense_paid || 0),
+      0
+    );
+
+    const totalDays = employeeDetails.salaryRecords.reduce((sum, record) => {
+      const start = new Date(record.start_date);
+      const end = new Date(record.end_date);
+      return sum + (end - start) / (1000 * 60 * 60 * 24);
+    }, 0);
+
+    const earnedMoney = (employeeDetails.fixed_salary / 30) * totalDays;
+    const remainingAmount = earnedMoney - totalExpense;
+
+    return {
+      totalExpense,
+      totalDays,
+      earnedMoney,
+      remainingAmount,
+    };
   };
 
   const calculateDaysWorked = (startDate, endDate) => {
@@ -139,6 +177,11 @@ const EmployeePage = () => {
   useEffect(() => {
     fetchEmployeesByRole(employeeData.role);
   }, [employeeData.role, id, fetchEmployeesByRole]);
+
+  // Toggle the view between table and card view
+  const toggleTableView = () => {
+    setShowTableView(!showTableView);
+  };
 
   return (
     <Container>
@@ -250,176 +293,140 @@ const EmployeePage = () => {
         <EmployeeList>
           {filteredEmployees.map((employee) => (
             <EmployeeItem key={employee.phone}>
-              <div onClick={() => handleEmployeeClick(employee.phone)}>
+              <div
+                onClick={() => handleEmployeeNameClick(employee.phone)}
+                style={{ cursor: "pointer", textDecoration: "underline", color: "blue" }}
+              >
                 {employee.name} ({employee.phone})
               </div>
-              <Button onClick={() => handleEmployeeClick(employee.phone)}>
-                Details
-              </Button>
-              <Button onClick={() => deleteEmployee(employee.phone)}>
-                Delete
-              </Button>
-              <Button onClick={() => setUpdateFormVisible(true)}>Update</Button>
+              <div>
+                <Button onClick={toggleTableView}>
+                  {showTableView ? "Show Cards" : "Show Table"}
+                </Button>
+                <Button onClick={() => deleteEmployee(employee.phone)}>
+                  Delete
+                </Button>
+                <Button onClick={() => setUpdateFormVisible(true)}>Update</Button>
+              </div>
             </EmployeeItem>
           ))}
         </EmployeeList>
       )}
 
-{selectedEmployeeDetails && (
-  <DetailsTable>
-    <thead>
-      <tr>
-        <th>Name</th>
-        <th>Phone</th>
-        <th>Start Date</th>
-        <th>End Date</th>
-        <th>Expense</th>
-        <th>Days Worked</th> 
-      </tr>
-    </thead>
-    <tbody>
-      {selectedEmployeeDetails.salaryRecords &&
-      selectedEmployeeDetails.salaryRecords.length > 0 ? (
-        selectedEmployeeDetails.salaryRecords.map((record, index) => {
-          const daysWorked = calculateDaysWorked(
-            record.start_date,
-            record.end_date
-          );
-          return (
-            <tr key={index}>
-              <td>{selectedEmployeeDetails.name}</td>
-              <td>{selectedEmployeeDetails.phone}</td>
-              <td>{record.start_date}</td>
-              <td>{record.end_date}</td>
-              <td>{record.expense_paid}</td>
-              <td>{daysWorked} days</td> 
+      {selectedEmployeeDetails && showTableView && (
+        <DetailsTable>
+          <thead>
+            <tr>
+              <th>Name</th>
+              <th>Phone</th>
+              <th>Start Date</th>
+              <th>End Date</th>
+              <th>Expense</th>
+              <th>Days Worked</th> 
             </tr>
-          );
-        })
-      ) : (
-        <tr>
-          <td colSpan="6">No salary records available</td>
-        </tr>
+          </thead>
+          <tbody>
+            {selectedEmployeeDetails.salaryRecords.map((record) => (
+              <tr key={record.start_date}>
+                <td>{selectedEmployeeDetails.name}</td>
+                <td>{selectedEmployeeDetails.phone}</td>
+                <td>{record.start_date}</td>
+                <td>{record.end_date}</td>
+                <td>{record.expense_paid}</td>
+                <td>
+                  {calculateDaysWorked(record.start_date, record.end_date)}
+                </td>
+              </tr>
+            ))}
+          </tbody>
+        </DetailsTable>
       )}
-    </tbody>
-  </DetailsTable>
-)}
+
+      {selectedEmployeeDetails && !showTableView && (
+        <CardView>
+          <h3>Employee Metrics</h3>
+          <p>Total Expense: {selectedEmployeeDetails.metrics.totalExpense}</p>
+          <p>Total Days Worked: {selectedEmployeeDetails.metrics.totalDays}</p>
+          <p>Earned Money: {selectedEmployeeDetails.metrics.earnedMoney}</p>
+          <p>Remaining Amount: {selectedEmployeeDetails.metrics.remainingAmount}</p>
+        </CardView>
+      )}
     </Container>
   );
 };
 
-export default EmployeePage;
-
-// Styled Components
 const Container = styled.div`
   padding: 20px;
-  background-color: #f4f7fc;
 `;
 
-const Header = styled.header`
-  display: flex;
-  justify-content: center;
-  padding: 20px;
-  background-color: #ffffff;
-  box-shadow: 0 4px 6px rgba(0, 0, 0, 0.1);
+const Header = styled.div`
+  text-align: center;
+  margin-bottom: 20px;
 `;
 
-const LorryTitle = styled.h1`
+const LorryTitle = styled.h2`
   font-size: 2rem;
-  font-weight: bold;
 `;
 
 const Button = styled.button`
-  padding: 10px 20px;
-  background-color: #4caf50;
-  color: white;
-  font-size: 1.1rem;
-  border: none;
-  border-radius: 5px;
+  padding: 10px;
+  margin: 10px;
   cursor: pointer;
-  margin-top: 10px;
+`;
 
-  &:hover {
-    background-color: #45a049;
-  }
+const Input = styled.input`
+  padding: 10px;
+  margin: 5px;
+`;
 
-  &:disabled {
-    background-color: #ccc;
-    cursor: not-allowed;
-  }
+const Select = styled.select`
+  padding: 10px;
+  margin: 5px;
 `;
 
 const Form = styled.div`
   display: flex;
   flex-direction: column;
-  margin-top: 20px;
-`;
-
-const Input = styled.input`
-  padding: 10px;
-  margin: 5px 0;
-  border: 1px solid #ccc;
-  border-radius: 5px;
-`;
-
-const Select = styled.select`
-  padding: 10px;
-  margin: 5px 0;
-  border: 1px solid #ccc;
-  border-radius: 5px;
-`;
-
-const RoleTabs = styled.div`
-  display: flex;
-  justify-content: center;
-  margin-top: 20px;
-`;
-
-const Tab = styled.div`
-  padding: 10px 20px;
-  margin: 0 10px;
-  cursor: pointer;
-  background-color: ${({ $active }) => ($active ? "#4caf50" : "#ccc")};
-  color: white;
-  border-radius: 5px;
-`;
-
-const EmployeeList = styled.div`
-  margin-top: 20px;
-`;
-
-const EmployeeItem = styled.div`
-  display: flex;
-  justify-content: space-between;
-  padding: 10px;
-  background-color: white;
-  margin-bottom: 10px;
-  border-radius: 5px;
-  box-shadow: 0 2px 5px rgba(0, 0, 0, 0.1);
-
-  button {
-    margin-left: 10px;
-  }
+  align-items: center;
 `;
 
 const UpdateForm = styled.div`
   display: flex;
   flex-direction: column;
-  margin-top: 20px;
+  align-items: center;
+`;
+
+const RoleTabs = styled.div`
+  display: flex;
+  justify-content: center;
+`;
+
+const Tab = styled.div`
+  padding: 10px 20px;
+  cursor: pointer;
+  background-color: ${(props) => (props.$active ? "#f0f0f0" : "transparent")};
+  border: 1px solid #ccc;
+`;
+
+const EmployeeList = styled.div`
+  display: flex;
+  flex-direction: column;
+`;
+
+const EmployeeItem = styled.div`
+  display: flex;
+  justify-content: space-between;
+  margin: 10px 0;
 `;
 
 const DetailsTable = styled.table`
   width: 100%;
-  margin-top: 20px;
   border-collapse: collapse;
-
-  th,
-  td {
-    padding: 10px;
-    border: 1px solid #ddd;
-  }
-
-  th {
-    background-color: #f4f7fc;
-  }
 `;
+
+const CardView = styled.div`
+  padding: 10px;
+  background-color: #f9f9f9;
+`;
+
+export default EmployeePage;

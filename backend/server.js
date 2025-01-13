@@ -6,8 +6,8 @@ const dotenv = require('dotenv');
 const authRoutes = require('./routes/authRoutes');
 const lorryRoutes = require('./routes/lorryRoutes');
 const employeeRoutes = require('./routes/employeeRoutes'); 
-const salaryRoutes = require('./routes/salaryRoutes');      
-
+const salaryRoutes = require('./routes/salaryRoutes');
+const fuelRoutes = require("./routes/fuelRoutes");
 dotenv.config();
 
 const app = express();
@@ -17,10 +17,11 @@ app.use(cors());
 app.use(bodyParser.json());
 
 // Define API routes with appropriate prefixes
-app.use('/api/auth', authRoutes);           // Authentication routes
-app.use('/api/lorry', lorryRoutes);         // Lorry routes
-app.use('/api/employee', employeeRoutes);   // Employee management routes
-app.use('/api/salary', salaryRoutes);       // Salary management routes
+app.use('/api/auth', authRoutes);           
+app.use('/api/lorry', lorryRoutes);         
+app.use('/api/employee', employeeRoutes);   
+app.use('/api/salary', salaryRoutes);       
+app.use("/api/fuel", fuelRoutes);
 
 // Health check route
 app.get('/api/health', (req, res) => {

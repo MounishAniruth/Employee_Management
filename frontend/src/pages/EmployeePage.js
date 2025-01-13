@@ -343,90 +343,196 @@ const EmployeePage = () => {
       )}
 
       {selectedEmployeeDetails && !showTableView && (
-        <CardView>
-          <h3>Employee Metrics</h3>
-          <p>Total Expense: {selectedEmployeeDetails.metrics.totalExpense}</p>
-          <p>Total Days Worked: {selectedEmployeeDetails.metrics.totalDays}</p>
-          <p>Earned Money: {selectedEmployeeDetails.metrics.earnedMoney}</p>
-          <p>Remaining Amount: {selectedEmployeeDetails.metrics.remainingAmount}</p>
-        </CardView>
+        <CardContainer>
+          <Card>Name: {selectedEmployeeDetails.name}</Card>
+          <Card>Phone: {selectedEmployeeDetails.phone}</Card>
+          <Card>Fixed Salary: ₹{selectedEmployeeDetails.fixed_salary}</Card>
+          <Card>Earned Money: ₹{selectedEmployeeDetails.metrics.earnedMoney}</Card>
+          <Card>Total Expense: ₹{selectedEmployeeDetails.metrics.totalExpense}</Card>
+          <Card>Remaining Amount: ₹{selectedEmployeeDetails.metrics.remainingAmount}</Card>
+          <Card>Total Days Worked: {selectedEmployeeDetails.metrics.totalDays}</Card>
+        </CardContainer>
       )}
+
     </Container>
   );
 };
 
 const Container = styled.div`
   padding: 20px;
+  background-color: #f8f9fa;
+  font-family: 'Roboto', sans-serif;
+  color: #333;
+  min-height: 100vh;
 `;
 
 const Header = styled.div`
   text-align: center;
   margin-bottom: 20px;
+  background-color: #ffffff;
+  padding: 15px 0;
+  box-shadow: 0 2px 4px rgba(0, 0, 0, 0.1);
 `;
 
 const LorryTitle = styled.h2`
   font-size: 2rem;
+  font-weight: 600;
+  color: #007bff;
 `;
 
 const Button = styled.button`
-  padding: 10px;
+  padding: 12px 20px;
   margin: 10px;
+  font-size: 0.9rem;
+  border-radius: 5px;
+  border: none;
+  background-color: #007bff;
+  color: #ffffff;
   cursor: pointer;
+  transition: background-color 0.3s;
+
+  &:hover {
+    background-color: #0056b3;
+  }
+
+  &:disabled {
+    background-color: #cccccc;
+    cursor: not-allowed;
+  }
 `;
 
 const Input = styled.input`
-  padding: 10px;
+  padding: 12px;
   margin: 5px;
+  font-size: 1rem;
+  border: 1px solid #cccccc;
+  border-radius: 5px;
+  width: 100%;
+  max-width: 300px;
 `;
 
 const Select = styled.select`
-  padding: 10px;
+  padding: 12px;
   margin: 5px;
+  font-size: 1rem;
+  border: 1px solid #cccccc;
+  border-radius: 5px;
+  width: 100%;
+  max-width: 300px;
 `;
 
 const Form = styled.div`
   display: flex;
   flex-direction: column;
   align-items: center;
+  background-color: #ffffff;
+  padding: 20px;
+  border-radius: 8px;
+  box-shadow: 0 2px 6px rgba(0, 0, 0, 0.1);
+  margin: 20px auto;
+  width: 100%;
+  max-width: 500px;
 `;
 
-const UpdateForm = styled.div`
-  display: flex;
-  flex-direction: column;
-  align-items: center;
-`;
+const UpdateForm = styled(Form)``;
 
 const RoleTabs = styled.div`
   display: flex;
   justify-content: center;
+  margin: 20px 0;
+  gap: 10px;
 `;
 
 const Tab = styled.div`
   padding: 10px 20px;
+  font-size: 1rem;
   cursor: pointer;
-  background-color: ${(props) => (props.$active ? "#f0f0f0" : "transparent")};
-  border: 1px solid #ccc;
+  border-radius: 5px;
+  background-color: ${(props) => (props.$active ? "#007bff" : "#e9ecef")};
+  color: ${(props) => (props.$active ? "#ffffff" : "#333")};
+  border: none;
+  transition: all 0.3s;
+
+  &:hover {
+    background-color: ${(props) => (props.$active ? "#0056b3" : "#d6d6d6")};
+  }
 `;
 
 const EmployeeList = styled.div`
   display: flex;
   flex-direction: column;
+  gap: 15px;
+  margin-top: 20px;
 `;
 
 const EmployeeItem = styled.div`
   display: flex;
   justify-content: space-between;
-  margin: 10px 0;
+  align-items: center;
+  padding: 15px;
+  background-color: #ffffff;
+  border-radius: 8px;
+  box-shadow: 0 2px 4px rgba(0, 0, 0, 0.1);
 `;
 
 const DetailsTable = styled.table`
   width: 100%;
   border-collapse: collapse;
+  margin: 20px 0;
+  background-color: #ffffff;
+  box-shadow: 0 2px 6px rgba(0, 0, 0, 0.1);
+  border-radius: 8px;
+  overflow: hidden;
+
+  th, td {
+    padding: 12px 15px;
+    text-align: left;
+    border-bottom: 1px solid #e9ecef;
+  }
+
+  th {
+    background-color: #007bff;
+    color: #ffffff;
+  }
+
+  tr:last-child td {
+    border-bottom: none;
+  }
 `;
 
-const CardView = styled.div`
-  padding: 10px;
-  background-color: #f9f9f9;
-`;
+const CardContainer = styled.div`
+    display: grid;
+    grid-template-columns: repeat(3, 1fr);
+    gap: 20px;
+    padding: 20px;
+  `;
+
+  const Card = styled.div`
+    padding: 20px;
+    border-radius: 12px;
+    box-shadow: 0 2px 10px rgba(0, 0, 0, 0.1);
+    text-align: center;
+    background-color: white;
+    font-size: 1rem;
+    font-weight: bold;
+  `;
+
+export {
+  Container,
+  Header,
+  LorryTitle,
+  Button,
+  Input,
+  Select,
+  Form,
+  UpdateForm,
+  RoleTabs,
+  Tab,
+  EmployeeList,
+  EmployeeItem,
+  DetailsTable,
+  CardContainer,
+};
+
 
 export default EmployeePage;

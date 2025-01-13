@@ -10,6 +10,7 @@ import LoginPage from "./pages/LoginPage";
 import HomePage from "./pages/HomePage";
 import DashboardPage from "./pages/DashboardPage";
 import EmployeePage from "./pages/EmployeePage";
+import FuelPage from "./components/FuelPage";  // Integrated FuelPage
 
 function App() {
   return (
@@ -20,9 +21,9 @@ function App() {
         <Route path="/login" element={<LoginPage />} />
         <Route path="/home" element={<HomePage />} />
         <Route path="/dashboard/:id" element={<DashboardPage />} />
-        <Route path="/employee/:id" element={<EmployeePage />} />{" "}
-        {/* Add this route */}
-      </Routes>
+        <Route path="/employee/:id" element={<EmployeePage />} />
+        <Route path="/fuel/:lorryId" element={<FuelPage />} />
+        </Routes>
     </Router>
   );
 }

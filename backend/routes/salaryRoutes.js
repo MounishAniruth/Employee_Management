@@ -5,9 +5,9 @@ const SalaryModel = require('../models/Salary');
 
 // Add a salary record
 router.post('/add', async (req, res) => {
-  const { employeeId, startDate, endDate, expensePaid } = req.body;
+  const { employeeId, startDate, endDate, expensePaid, expensePaymentMethod } = req.body;
   try {
-    const insertId = await SalaryModel.addSalaryRecord(employeeId, startDate, endDate, expensePaid);
+    const insertId = await SalaryModel.addSalaryRecord(employeeId, startDate, endDate, expensePaid, expensePaymentMethod);
     res.status(201).json({ message: 'Salary record added successfully', salaryId: insertId });
   } catch (err) {
     console.error(err);
@@ -15,7 +15,7 @@ router.post('/add', async (req, res) => {
   }
 });
 
-// Get salary records for an employee
+// Get salary records for an employee using their phone number
 router.get('/:phone', (req, res) => {
   const { phone } = req.params;
   db.query('SELECT id FROM employees WHERE phone = ?', [phone], (err, employeeResult) => {
@@ -43,9 +43,18 @@ router.get('/:phone', (req, res) => {
 // Update a salary record
 router.put('/update/:salaryId', async (req, res) => {
   const { salaryId } = req.params;
-  const { startDate, endDate, expensePaid } = req.body;
+  const { startDate, endDate, expensePaid, expensePaymentMethod } = req.body;
+  
+  console.log('Request payload:', req.body); // Add this log
+  
   try {
-    const rowsAffected = await SalaryModel.updateSalaryRecord(salaryId, startDate, endDate, expensePaid);
+    const rowsAffected = await SalaryModel.updateSalaryRecord(
+      salaryId,
+      startDate,
+      endDate,
+      expensePaid,
+      expensePaymentMethod
+    );
     if (rowsAffected) {
       res.status(200).json({ message: 'Salary record updated successfully' });
     } else {
@@ -57,16 +66,7 @@ router.put('/update/:salaryId', async (req, res) => {
   }
 });
 
-router.get('/calculate/:employeeId', async (req, res) => {
-  const { employeeId } = req.params;
-  try {
-    const records = await SalaryModel.getSalaryRecordsByEmployeeWithCalculations(employeeId);
-    res.status(200).json(records);
-  } catch (err) {
-    console.error(err);
-    res.status(500).json({ error: 'Failed to fetch salary records with calculations' });
-  }
-});
+
 
 // Delete a salary record
 router.delete('/delete/:salaryId', async (req, res) => {

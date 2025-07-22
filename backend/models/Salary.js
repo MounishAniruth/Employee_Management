@@ -2,12 +2,19 @@ const db = require("../config/db");
 
 const SalaryModel = {
   // Add a new salary record
-  async addSalaryRecord(employeeId, startDate, endDate, expensePaid) {
+  async addSalaryRecord(employeeId, startDate, endDate, expensePaid, expensePaymentMethod) {
     const query = `
-      INSERT INTO employee_salaries (employee_id, start_date, end_date, expense_paid)
-      VALUES (?, ?, ?, ?)
+      INSERT INTO employee_salaries (employee_id, start_date, end_date, expense_paid, expense_payment_method)
+      VALUES (?, ?, ?, ?, ?)
     `;
-    const [result] = await db.query(query, [employeeId, startDate, endDate, expensePaid]);
+    const [result] = await db.query(query, [
+      employeeId,
+      startDate,
+      endDate,
+      expensePaid,
+      expensePaymentMethod,
+      salaryId,
+    ]);
     return result.insertId;
   },
 
@@ -15,8 +22,9 @@ const SalaryModel = {
   getSalaryRecordsByEmployee(employeeId, callback) {
     const query = `
       SELECT es.id, es.start_date, es.end_date, 
-             DATEDIFF(es.end_date, es.start_date) AS days_worked, 
+             DATEDIFF(es.end_date, es.start_date) + 1 AS days_worked, 
              es.expense_paid,
+             es.expense_payment_method,
              e.name
       FROM employee_salaries es
       JOIN employees e ON es.employee_id = e.id
@@ -31,16 +39,36 @@ const SalaryModel = {
     });
   },
 
-  async updateSalaryRecord(salaryId, startDate, endDate, expensePaid) {
+  // Update a salary record
+  async updateSalaryRecord(salaryId, startDate, endDate, expensePaid, expensePaymentMethod) {
+    console.log("Updating salary record with:", {
+      salaryId,
+      startDate,
+      endDate,
+      expensePaid,
+      expensePaymentMethod
+    });
+  
     const query = `
       UPDATE employee_salaries
-      SET start_date = ?, end_date = ?, expense_paid = ?
+      SET start_date = ?, end_date = ?, expense_paid = ?, expense_payment_method = ?
       WHERE id = ?
     `;
-    const [result] = await db.query(query, [startDate, endDate, expensePaid, salaryId]);
+  
+    const [result] = await db.query(query, [
+      startDate,
+      endDate,
+      expensePaid,
+      expensePaymentMethod,
+      salaryId,
+    ]);
+  
+    console.log("Update Result:", result);
     return result.affectedRows;
   },
+  
 
+  // Delete a salary record
   async deleteSalaryRecord(salaryId) {
     const query = `
       DELETE FROM employee_salaries

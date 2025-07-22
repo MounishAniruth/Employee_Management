@@ -1,1 +1,66 @@
+# === Node.js ===
 node_modules/
+npm-debug.log*
+yarn-debug.log*
+yarn-error.log*
+package-lock.json
+.pnpm-debug.log*
+
+# === macOS ===
+.DS_Store
+
+# === VS Code ===
+.vscode/
+.history/
+
+# === Environment variables ===
+.env
+.env.local
+.env.development.local
+.env.test.local
+.env.production.local
+
+# === Logs ===
+logs/
+*.log
+
+# === Build output ===
+dist/
+build/
+.cache/
+.next/
+out/
+coverage/
+
+# === React Specific ===
+*.local
+*.env.*
+*.tgz
+.eslintcache
+
+# === Optional: Ignore test coverage reports ===
+coverage/
+lcov-report/
+
+# === OS Junk ===
+Thumbs.db
+Desktop.ini
+
+# === Binaries ===
+*.exe
+*.dll
+*.so
+*.dylib
+
+# === IDEs ===
+.idea/
+*.sublime-project
+*.sublime-workspace
+
+# === TypeScript ===
+*.tsbuildinfo
+
+# === Other ===
+*.swp
+*.bak
+*.tmp

@@ -4,25 +4,6 @@ const jwt = require("jsonwebtoken");
 const Lorry = require("../models/Lorry");
 const db = require("../config/db");
 
-// Middleware to verify if the user is an authenticated owner
-const verifyOwner = (req, res, next) => {
-  const token = req.header("Authorization");
-
-  if (!token) {
-    return res.status(401).send("Access Denied: No Token Provided");
-  }
-
-  try {
-    const decoded = jwt.verify(token, "your_jwt_secret"); // Use your JWT secret here
-    req.user = decoded; // Attach user data to request
-    if (req.user.user_type !== "owner") {
-      return res.status(403).send("Access Denied: Not an Owner");
-    }
-    next();
-  } catch (err) {
-    return res.status(400).send("Invalid Token");
-  }
-};
 
 // Route to get all lorries
 router.get("/", (req, res) => {

@@ -1,6 +1,7 @@
 import React, { useState } from "react";
 import axios from "axios";
 import { useNavigate } from "react-router-dom"; 
+import { TextField, Button, MenuItem, Select, InputLabel, FormControl, FormHelperText } from "@mui/material";
 import styled from "styled-components";
 
 const SignupPage = () => {
@@ -47,60 +48,72 @@ const SignupPage = () => {
       setError(err.response?.data?.message || "Something went wrong! Please try again.");
     }
   };
-  
 
   return (
     <Container>
       <Card>
         <Title>Sign Up</Title>
         <Form onSubmit={handleSubmit}>
-          <Input
-            type="text"
+          <TextField
+            label="Full Name"
+            variant="outlined"
             name="name"
-            placeholder="Full Name"
             value={formData.name}
             onChange={handleInputChange}
+            fullWidth
+            margin="normal"
             required
           />
-          <Input
-            type="text"
+          <TextField
+            label="Phone Number"
+            variant="outlined"
             name="phone"
-            placeholder="Phone Number"
             value={formData.phone}
             onChange={handleInputChange}
+            fullWidth
+            margin="normal"
             required
           />
-          <Input
-            type="email"
+          <TextField
+            label="Email Address"
+            variant="outlined"
             name="email"
-            placeholder="Email Address"
             value={formData.email}
             onChange={handleInputChange}
+            fullWidth
+            margin="normal"
             required
           />
-          <Input
+          <TextField
+            label="Password"
             type="password"
+            variant="outlined"
             name="password"
-            placeholder="Password"
             value={formData.password}
             onChange={handleInputChange}
+            fullWidth
+            margin="normal"
             required
           />
-          <Select
-            name="userType"
-            value={formData.userType}
-            onChange={handleInputChange}
-            required
-          >
-            <option value="" disabled>Select User Type</option>
-            <option value="owner">Owner</option>
-            <option value="manager">Manager</option>
-            <option value="lorry_manager">Lorry Manager</option>
-          </Select>
+          <FormControl fullWidth margin="normal" required>
+            <InputLabel>User Type</InputLabel>
+            <Select
+              name="userType"
+              value={formData.userType}
+              onChange={handleInputChange}
+              label="User Type"
+            >
+              <MenuItem value="" disabled>Select User Type</MenuItem>
+              <MenuItem value="owner">Owner</MenuItem>
+              <MenuItem value="manager">Manager</MenuItem>
+              <MenuItem value="lorry_manager">Lorry Manager</MenuItem>
+            </Select>
+            {error && <FormHelperText error>{error}</FormHelperText>}
+          </FormControl>
 
-          {error && <ErrorMessage>{error}</ErrorMessage>}
-
-          <Button type="submit">Sign Up</Button>
+          <ButtonStyled type="submit" variant="contained" color="primary">
+            Sign Up
+          </ButtonStyled>
         </Form>
 
         <LinkText>
@@ -130,7 +143,7 @@ const Card = styled.div`
   border-radius: 10px;
   box-shadow: 0 10px 30px rgba(0, 0, 0, 0.1);
   width: 100%;
-  max-width: 400px;
+  max-width: 500px;
   text-align: center;
 `;
 
@@ -145,41 +158,9 @@ const Form = styled.form`
   flex-direction: column;
 `;
 
-const Input = styled.input`
-  padding: 12px;
-  margin: 10px 0;
-  border: 1px solid #ddd;
-  border-radius: 8px;
-  font-size: 1rem;
-  outline: none;
-  transition: all 0.3s ease;
-
-  &:focus {
-    border-color: #2575fc;
-  }
-`;
-
-const Select = styled.select`
-  padding: 12px;
-  margin: 10px 0;
-  border: 1px solid #ddd;
-  border-radius: 8px;
-  font-size: 1rem;
-  outline: none;
-  transition: all 0.3s ease;
-
-  &:focus {
-    border-color: #2575fc;
-  }
-`;
-
-const Button = styled.button`
+const ButtonStyled = styled(Button)`
   padding: 15px;
   margin: 20px 0;
-  background: #2575fc;
-  color: #fff;
-  border: none;
-  border-radius: 8px;
   font-size: 1.1rem;
   cursor: pointer;
   transition: background 0.3s ease;
@@ -187,12 +168,6 @@ const Button = styled.button`
   &:hover {
     background: #6a11cb;
   }
-`;
-
-const ErrorMessage = styled.p`
-  color: #ff4c4c;
-  font-size: 0.9rem;
-  margin: 10px 0;
 `;
 
 const LinkText = styled.p`

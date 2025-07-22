@@ -1,17 +1,20 @@
 import React, { useState } from "react";
 import axios from "axios";
-import { useNavigate } from "react-router-dom"; 
+import { useNavigate } from "react-router-dom";
+import { Button, TextField, Snackbar, Typography, Container as MuiContainer } from "@mui/material";
 import styled from "styled-components";
+import { Link } from "react-router-dom";
 
 const LoginPage = () => {
   const [loginData, setLoginData] = useState({
-    identifier: "", // Changed from 'phone' to 'identifier'
+    identifier: "",
     password: "",
   });
 
   const [error, setError] = useState("");
   const [success, setSuccess] = useState("");
-  const navigate = useNavigate(); 
+  const [openSnackbar, setOpenSnackbar] = useState(false);
+  const navigate = useNavigate();
 
   const handleInputChange = (e) => {
     const { name, value } = e.target;
@@ -23,14 +26,16 @@ const LoginPage = () => {
     try {
       const response = await axios.post("http://localhost:5001/api/auth/login", loginData);
       const { token, message } = response.data;
-  
+
       localStorage.setItem("authToken", token);
-  
+
       setSuccess(message);
       setError("");
-  
-      // Navigate to the Home Page after successful login
-      navigate("/home");
+      setOpenSnackbar(true);
+
+      setTimeout(() => {
+        navigate("/home");
+      }, 500); // Navigate after showing success message
     } catch (err) {
       if (err.response && err.response.data && err.response.data.message) {
         setError(err.response.data.message);
@@ -39,57 +44,79 @@ const LoginPage = () => {
       }
       setSuccess("");
     }
-  };  
+  };
+
+  const handleCloseSnackbar = () => {
+    setOpenSnackbar(false);
+  };
 
   return (
-    <Container>
-      <Card>
-        <Title>Login</Title>
-        <Form onSubmit={handleSubmit}>
-          <Input
-            type="text"
-            name="identifier" // Updated field name
-            placeholder="Email or Phone Number"
+    <StyledContainer>
+      <StyledCard>
+        <Typography variant="h4" gutterBottom>
+          Login
+        </Typography>
+        <form onSubmit={handleSubmit}>
+          <TextField
+            label="Email or Phone Number"
+            variant="outlined"
+            fullWidth
+            name="identifier"
             value={loginData.identifier}
             onChange={handleInputChange}
             required
+            margin="normal"
           />
-          <Input
-            type="password"
+          <TextField
+            label="Password"
+            variant="outlined"
+            fullWidth
             name="password"
-            placeholder="Password"
+            type="password"
             value={loginData.password}
             onChange={handleInputChange}
             required
+            margin="normal"
           />
           {error && <ErrorMessage>{error}</ErrorMessage>}
           {success && <SuccessMessage>{success}</SuccessMessage>}
-          <Button type="submit">Login</Button>
-        </Form>
+          <Button variant="contained" color="primary" fullWidth type="submit" sx={{ marginTop: 2 }}>
+            Login
+          </Button>
+        </form>
+        <Typography variant="body2" color="textSecondary" sx={{ marginTop: 2 }}>
+          Don't have an account?{" "}
+          <Link to="/signup" style={{ textDecoration: "none", color: "#1976d2" }}>
+            Sign Up
+          </Link>
+        </Typography>
+      </StyledCard>
 
-        <LinkText>
-          Don't have an account? 
-          <LinkButton onClick={() => navigate("/signup")}>Sign Up</LinkButton>
-        </LinkText>
-      </Card>
-    </Container>
+      <Snackbar
+        open={openSnackbar}
+        autoHideDuration={3000}
+        onClose={handleCloseSnackbar}
+        message={success}
+      />
+    </StyledContainer>
   );
 };
 
 export default LoginPage;
 
-
 // Styled Components
-
-const Container = styled.div`
+const StyledContainer = styled(MuiContainer)`
   display: flex;
   justify-content: center;
   align-items: center;
   min-height: 100vh;
   background: linear-gradient(to right, #6a11cb, #2575fc);
+  height: 100%;
+  margin: 0; /* Remove default margin */
+  padding: 0; /* Remove default padding */
 `;
 
-const Card = styled.div`
+const StyledCard = styled.div`
   background: #fff;
   padding: 40px;
   border-radius: 10px;
@@ -99,73 +126,14 @@ const Card = styled.div`
   text-align: center;
 `;
 
-const Title = styled.h2`
-  font-size: 2rem;
-  margin-bottom: 20px;
-  color: #333;
-`;
-
-const Form = styled.form`
-  display: flex;
-  flex-direction: column;
-`;
-
-const Input = styled.input`
-  padding: 12px;
-  margin: 10px 0;
-  border: 1px solid #ddd;
-  border-radius: 8px;
-  font-size: 1rem;
-  outline: none;
-  transition: all 0.3s ease;
-
-  &:focus {
-    border-color: #2575fc;
-  }
-`;
-
-const Button = styled.button`
-  padding: 15px;
-  margin: 20px 0;
-  background: #2575fc;
-  color: #fff;
-  border: none;
-  border-radius: 8px;
-  font-size: 1.1rem;
-  cursor: pointer;
-  transition: background 0.3s ease;
-
-  &:hover {
-    background: #6a11cb;
-  }
-`;
-
 const ErrorMessage = styled.p`
-  color: #ff4c4c;
+  color: #f44336;
   font-size: 0.9rem;
   margin: 10px 0;
 `;
 
 const SuccessMessage = styled.p`
-  color: #28a745;
+  color: #4caf50;
   font-size: 0.9rem;
   margin: 10px 0;
-`;
-
-const LinkText = styled.p`
-  font-size: 1rem;
-  color: #555;
-`;
-
-const LinkButton = styled.button`
-  background: none;
-  border: none;
-  color: #2575fc;
-  cursor: pointer;
-  font-size: 1rem;
-  text-decoration: underline;
-
-  &:hover {
-    color: #6a11cb;
-  }
 `;

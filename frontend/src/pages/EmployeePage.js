@@ -4,7 +4,7 @@ import axios from "axios";
 import styled from "styled-components";
 
 const EmployeePage = () => {
-  const { id } = useParams();
+  const { id }  = useParams();
   const [employeeData, setEmployeeData] = useState({
     name: "",
     phone: "",
@@ -22,7 +22,7 @@ const EmployeePage = () => {
   const [updateStartDate, setUpdateStartDate] = useState("");
   const [updateEndDate, setUpdateEndDate] = useState("");
   const [expensePaid, setExpensePaid] = useState("");
-  const [employeeRole, setEmployeeRole] = useState("");
+  const [paymentMethod, setPaymentMethod] = useState(""); 
 
   // New state to handle toggling between table and card view
   const [showTableView, setShowTableView] = useState(false); 
@@ -116,22 +116,25 @@ const EmployeePage = () => {
       const updateData = {
         startDate: updateStartDate,
         endDate: updateEndDate,
-        expense: expensePaid,
+        expensePaid: expensePaid, 
+        expensePaymentMethod: paymentMethod,  
       };
-
-      // Ensure the correct endpoint is being used
+  
+      console.log('Payload sent to backend:', updateData); // Debugging log
+  
       await axios.put(
         `http://localhost:5001/api/employee/updateExpense/${updatePhone}`,
         updateData
       );
-
+  
       alert("Employee expense updated successfully!");
-      setUpdateFormVisible(false); // Hide the form after successful update
+      setUpdateFormVisible(false);
     } catch (error) {
       console.error("Error updating employee:", error);
       alert("Failed to update employee.");
     }
-  };
+  };  
+  
 
   const deleteEmployee = async (phone) => {
     setLoading(true);
@@ -262,11 +265,15 @@ const EmployeePage = () => {
             onChange={(e) => setExpensePaid(e.target.value)}
           />
           <Select
-            value={employeeRole}
-            onChange={(e) => setEmployeeRole(e.target.value)}
+            value={paymentMethod}
+            onChange={(e) => setPaymentMethod(e.target.value)}
           >
-            <option value="driver">Driver</option>
-            <option value="helper">Helper</option>
+            <option value="Phone Pay">Phone Pay</option>
+            <option value="Google Pay">Google Pay</option>
+            <option value="Cash">Cash</option>
+            <option value="Bank">Bank</option>
+            <option value="Office Cash">Office Cash</option>
+            <option value="Site Cash">Site Cash</option>
           </Select>
           <Button onClick={handleUpdateEmployee} disabled={loading}>
             {loading ? "Updating..." : "Update Employee"}
@@ -313,34 +320,37 @@ const EmployeePage = () => {
         </EmployeeList>
       )}
 
-      {selectedEmployeeDetails && showTableView && (
-        <DetailsTable>
-          <thead>
-            <tr>
-              <th>Name</th>
-              <th>Phone</th>
-              <th>Start Date</th>
-              <th>End Date</th>
-              <th>Expense</th>
-              <th>Days Worked</th> 
-            </tr>
-          </thead>
-          <tbody>
-            {selectedEmployeeDetails.salaryRecords.map((record) => (
-              <tr key={record.start_date}>
-                <td>{selectedEmployeeDetails.name}</td>
-                <td>{selectedEmployeeDetails.phone}</td>
-                <td>{record.start_date}</td>
-                <td>{record.end_date}</td>
-                <td>{record.expense_paid}</td>
-                <td>
-                  {calculateDaysWorked(record.start_date, record.end_date)}
-                </td>
-              </tr>
-            ))}
-          </tbody>
-        </DetailsTable>
-      )}
+{selectedEmployeeDetails && showTableView && (
+  <DetailsTable>
+    <thead>
+      <tr>
+        <th>Name</th>
+        <th>Phone</th>
+        <th>Start Date</th>
+        <th>End Date</th>
+        <th>Expense</th>
+        <th>Payment Method</th>
+        <th>Days Worked</th>
+      </tr>
+    </thead>
+    <tbody>
+      {selectedEmployeeDetails.salaryRecords.map((record) => (
+        <tr key={record.start_date}>
+          <td>{selectedEmployeeDetails.name}</td>
+          <td>{selectedEmployeeDetails.phone}</td>
+          <td>{record.start_date}</td>
+          <td>{record.end_date}</td>
+          <td>{record.expense_paid}</td>
+          <td>{record.expense_payment_method}</td>
+          <td>
+            {calculateDaysWorked(record.start_date, record.end_date)}
+          </td>
+        </tr>
+      ))}
+    </tbody>
+  </DetailsTable>
+)}
+
 
       {selectedEmployeeDetails && !showTableView && (
         <CardContainer>

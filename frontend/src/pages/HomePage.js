@@ -1,7 +1,7 @@
 import React, { useState, useEffect } from "react";
 import styled from "styled-components";
-import axios from "axios";
 import { useNavigate } from "react-router-dom";
+import api from "../utils/api";
 import LorryImage from "../assets/images/TN34K3749.jpeg";
 
 const HomePage = () => {
@@ -10,164 +10,360 @@ const HomePage = () => {
 
   const [lorries, setLorries] = useState([]);
   const [isFormVisible, setIsFormVisible] = useState(false);
+
   const [registrationNumber, setRegistrationNumber] = useState("");
   const [ownerPhone, setOwnerPhone] = useState("");
   const [model, setModel] = useState("");
   const [yearBuilt, setYearBuilt] = useState("");
   const [ownerName, setOwnerName] = useState("");
+
   const navigate = useNavigate();
 
+  // =====================================================
+  // FETCH ALL LORRIES
+  // =====================================================
   useEffect(() => {
     const fetchLorries = async () => {
       try {
-        const response = await axios.get("http://localhost:5001/api/lorry");
+        // api.js automatically adds:
+        // Authorization: Bearer <authToken>
+        const response = await api.get("/lorry");
+
         setLorries(response.data);
-        console.log("Lorries fetched:", response.data); // Debugging log
+
+        console.log("Lorries fetched:", response.data);
       } catch (error) {
         console.error("Error fetching lorries:", error);
-        alert("Error fetching lorries. Please check the backend server.");
+
+        if (error.response?.status === 401) {
+          alert("Session expired. Please login again.");
+          return;
+        }
+
+        alert(
+          error.response?.data?.message ||
+            "Error fetching lorries. Please check the backend server."
+        );
       }
     };
+
     fetchLorries();
   }, []);
 
+  // =====================================================
+  // SHOW / HIDE ADD LORRY FORM
+  // =====================================================
   const handleAddLorry = () => {
     setIsFormVisible(!isFormVisible);
   };
 
+  // =====================================================
+  // ADD LORRY
+  // =====================================================
   const handleSubmit = async (e) => {
     e.preventDefault();
+
     try {
       const newLorry = {
         registration_number: registrationNumber,
-        owner_phone: ownerPhone,  // Ensure phone is passed to match the owner
-        model,
+        owner_phone: ownerPhone,
+        model: model,
         year_built: yearBuilt,
         owner_name: ownerName,
       };
-      await axios.post("http://localhost:5001/api/lorry/add", newLorry);
+
+      console.log("Adding lorry:", newLorry);
+
+      // JWT automatically added by api.js
+      await api.post("/lorry/add", newLorry);
+
       alert("Lorry added successfully");
+
+      // Clear form
+      setRegistrationNumber("");
+      setOwnerPhone("");
+      setModel("");
+      setYearBuilt("");
+      setOwnerName("");
+
+      // Hide form
       setIsFormVisible(false);
-      const response = await axios.get("http://localhost:5001/api/lorry");
+
+      // Fetch updated lorry list
+      const response = await api.get("/lorry");
+
       setLorries(response.data);
     } catch (error) {
       console.error("Error adding lorry:", error);
-      alert("Failed to add lorry");
+
+      if (error.response?.status === 401) {
+        alert("Session expired. Please login again.");
+        return;
+      }
+
+      alert(
+        error.response?.data?.message ||
+          "Failed to add lorry"
+      );
     }
   };
 
+  // =====================================================
+  // DELETE LORRY
+  // =====================================================
   const handleDeleteLorry = async (registrationNumber) => {
+    const confirmDelete = window.confirm(
+      `Are you sure you want to delete lorry ${registrationNumber}?`
+    );
+
+    if (!confirmDelete) {
+      return;
+    }
+
     try {
-      await axios.delete(`http://localhost:5001/api/lorry/${registrationNumber}`);
+      // JWT automatically added by api.js
+      await api.delete(
+        `/lorry/${registrationNumber}`
+      );
+
       alert("Lorry deleted successfully");
-      setLorries(lorries.filter((lorry) => lorry.registration_number !== registrationNumber));
+
+      setLorries((prevLorries) =>
+        prevLorries.filter(
+          (lorry) =>
+            lorry.registration_number !==
+            registrationNumber
+        )
+      );
     } catch (error) {
       console.error("Error deleting lorry:", error);
-      alert("Failed to delete lorry");
+
+      if (error.response?.status === 401) {
+        alert("Session expired. Please login again.");
+        return;
+      }
+
+      alert(
+        error.response?.data?.message ||
+          "Failed to delete lorry"
+      );
     }
   };
 
+  // =====================================================
+  // OPEN LORRY DASHBOARD
+  // =====================================================
   const handleLorryClick = (id) => {
-    console.log('Navigating to dashboard with registration number:', id);
+    console.log(
+      "Navigating to dashboard with ID:",
+      id
+    );
+
     navigate(`/dashboard/${id}`);
   };
 
+  // =====================================================
+  // LOGOUT
+  // =====================================================
   const handleLogout = () => {
     localStorage.removeItem("authToken");
+    localStorage.removeItem("user");
+
     navigate("/login");
   };
 
+  // =====================================================
+  // PAGE
+  // =====================================================
   return (
     <Container>
+
+      {/* ================= HEADER ================= */}
+
       <Header>
-        <CompanyName>Sri Murugan Rig Service</CompanyName>
+        <CompanyName>
+          Sri Murugan Rig Service
+        </CompanyName>
+
         <OwnerInfo>
-          <OwnerName>{STATIC_NAME}</OwnerName>
-          <OwnerPhone>{STATIC_PHONE}</OwnerPhone>
+          <OwnerName>
+            {STATIC_NAME}
+          </OwnerName>
+
+          <OwnerPhone>
+            {STATIC_PHONE}
+          </OwnerPhone>
         </OwnerInfo>
-        <LogoutButton onClick={handleLogout}>Logout</LogoutButton>
+
+        <LogoutButton onClick={handleLogout}>
+          Logout
+        </LogoutButton>
       </Header>
 
+      {/* ================= ADD LORRY BUTTON ================= */}
+
       <AddLorryButton onClick={handleAddLorry}>
-        {isFormVisible ? "Cancel" : "Add Lorry"}
+        {isFormVisible
+          ? "Cancel"
+          : "Add Lorry"}
       </AddLorryButton>
+
+      {/* ================= ADD LORRY FORM ================= */}
 
       {isFormVisible && (
         <AddLorryForm onSubmit={handleSubmit}>
+
           <Input
             type="text"
             placeholder="Registration Number"
             value={registrationNumber}
-            onChange={(e) => setRegistrationNumber(e.target.value)}
+            onChange={(e) =>
+              setRegistrationNumber(
+                e.target.value
+              )
+            }
             required
           />
+
           <Input
             type="text"
             placeholder="Owner Name"
             value={ownerName}
-            onChange={(e) => setOwnerName(e.target.value)}
+            onChange={(e) =>
+              setOwnerName(
+                e.target.value
+              )
+            }
             required
           />
+
           <Input
             type="text"
             placeholder="Owner Phone"
             value={ownerPhone}
-            onChange={(e) => setOwnerPhone(e.target.value)}
+            onChange={(e) =>
+              setOwnerPhone(
+                e.target.value
+              )
+            }
             required
           />
+
           <Input
             type="text"
             placeholder="Model"
             value={model}
-            onChange={(e) => setModel(e.target.value)}
+            onChange={(e) =>
+              setModel(
+                e.target.value
+              )
+            }
             required
           />
+
           <Input
             type="number"
             placeholder="Year Built"
             value={yearBuilt}
-            onChange={(e) => setYearBuilt(e.target.value)}
+            onChange={(e) =>
+              setYearBuilt(
+                e.target.value
+              )
+            }
             required
           />
-          <SubmitButton type="submit">Add Lorry</SubmitButton>
+
+          <SubmitButton type="submit">
+            Add Lorry
+          </SubmitButton>
+
         </AddLorryForm>
       )}
 
+      {/* ================= LORRY LIST ================= */}
+
       <LorryListContainer>
+
         {lorries.map((lorry) => (
-          <LorryCard key={lorry.registration_number} onClick={() => handleLorryClick(lorry.id)}>
-            {/* Display Owner Phone Number */}
-            <OwnerPhoneText>{lorry.owner_phone || "Unknown Owner"}</OwnerPhoneText>
-        
+
+          <LorryCard
+            key={lorry.registration_number}
+            onClick={() =>
+              handleLorryClick(lorry.id)
+            }
+          >
+
+            {/* Owner Phone */}
+
+            <OwnerPhoneText>
+              {lorry.owner_phone ||
+                "Unknown Owner"}
+            </OwnerPhoneText>
+
+            {/* Lorry Image */}
+
             <ImageContainer>
-              <img src={LorryImage} alt="Lorry model TN34K3749" />
+              <img
+                src={LorryImage}
+                alt="Lorry model TN34K3749"
+              />
             </ImageContainer>
-        
+
+            {/* Lorry Details */}
+
             <LorryDetails>
-              <div>Owner Name: {lorry.owner_name}</div>
-              <div>Registration: {lorry.registration_number}</div>
-              <div>Model: {lorry.model}</div>
-              <div>Year Built: {lorry.year_built}</div>
+
+              <div>
+                Owner Name:{" "}
+                {lorry.owner_name}
+              </div>
+
+              <div>
+                Registration:{" "}
+                {lorry.registration_number}
+              </div>
+
+              <div>
+                Model:{" "}
+                {lorry.model}
+              </div>
+
+              <div>
+                Year Built:{" "}
+                {lorry.year_built}
+              </div>
+
             </LorryDetails>
-        
+
+            {/* Delete Button */}
+
             <DeleteButton
               onClick={(e) => {
                 e.stopPropagation();
-                handleDeleteLorry(lorry.registration_number);
+
+                handleDeleteLorry(
+                  lorry.registration_number
+                );
               }}
             >
               Delete
             </DeleteButton>
+
           </LorryCard>
+
         ))}
+
       </LorryListContainer>
+
     </Container>
   );
 };
 
 export default HomePage;
 
-// Styled components
+// =====================================================
+// STYLED COMPONENTS
+// =====================================================
 
 const Container = styled.div`
   display: flex;
@@ -175,6 +371,7 @@ const Container = styled.div`
   align-items: center;
   padding: 30px;
   background-color: #f9f9f9;
+  min-height: 100vh;
 `;
 
 const Header = styled.div`
@@ -274,6 +471,7 @@ const Input = styled.input`
   border-radius: 5px;
   border: 1px solid #ddd;
   width: 100%;
+  box-sizing: border-box;
 `;
 
 const SubmitButton = styled.button`

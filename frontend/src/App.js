@@ -10,8 +10,7 @@ import LoginPage from "./pages/LoginPage";
 import HomePage from "./pages/HomePage";
 import DashboardPage from "./pages/DashboardPage";
 import EmployeePage from "./pages/EmployeePage";
-import FuelPage from "./components/FuelPage";  // Integrated FuelPage
-
+import FuelPage from "./pages/FuelPage";
 function App() {
   return (
     <Router>

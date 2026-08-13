@@ -1,43 +1,92 @@
 import React, { useState } from "react";
+import { useNavigate } from "react-router-dom";
 import axios from "axios";
 import "./styles/Login.css";
 
 const Login = () => {
-  const [formData, setFormData] = useState({ email: "", password: "" });
+  const [formData, setFormData] = useState({
+    identifier: "",
+    password: "",
+  });
+
   const [error, setError] = useState("");
+
+  const navigate = useNavigate();
 
   const handleInputChange = (e) => {
     const { name, value } = e.target;
-    setFormData({ ...formData, [name]: value });
+
+    setFormData({
+      ...formData,
+      [name]: value,
+    });
   };
 
   const handleSubmit = async (e) => {
     e.preventDefault();
+
     setError("");
 
-    if (!formData.email || !formData.password) {
+    // Validate fields
+    if (!formData.identifier || !formData.password) {
       setError("Both fields are required!");
       return;
     }
 
     try {
-      const response = await axios.post("http://localhost:5000/api/login", formData);
+      // Login API
+      const response = await axios.post(
+        "http://localhost:5001/api/auth/login",
+        {
+          identifier: formData.identifier,
+          password: formData.password,
+        }
+      );
+
+      console.log("Login response:", response.data);
+
+      // Save JWT token
+      localStorage.setItem(
+        "authToken",
+        response.data.token
+      );
+
+      // Save user information
+      localStorage.setItem(
+        "user",
+        JSON.stringify(response.data.user)
+      );
+
       alert(response.data.message);
+
+      // Navigate to Home page
+      navigate("/home");
+
     } catch (err) {
-      setError(err.response?.data?.message || "Invalid credentials!");
+      console.error("Login error:", err);
+
+      setError(
+        err.response?.data?.message ||
+        "Invalid credentials!"
+      );
     }
   };
 
   return (
     <div className="login-container">
-      <form className="login-form" onSubmit={handleSubmit}>
+
+      <form
+        className="login-form"
+        onSubmit={handleSubmit}
+      >
+
         <h2>Login</h2>
 
         <input
-          type="email"
-          name="email"
-          placeholder="Email"
-          value={formData.email}
+          type="text"
+          name="identifier"
+          placeholder="Email or Phone Number"
+          value={formData.identifier}
           onChange={handleInputChange}
           required
         />
@@ -51,10 +100,18 @@ const Login = () => {
           required
         />
 
-        {error && <p className="error-message">{error}</p>}
+        {error && (
+          <p className="error-message">
+            {error}
+          </p>
+        )}
 
-        <button type="submit">Login</button>
+        <button type="submit">
+          Login
+        </button>
+
       </form>
+
     </div>
   );
 };

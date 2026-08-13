@@ -29,7 +29,16 @@ const SignupPage = () => {
       setError("All fields are required!");
       return;
     }
-  
+    if (!/^\d{10}$/.test(formData.phone)) {
+      setError("Phone number must be 10 digits.");
+      return;
+    }
+    
+    if (!/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(formData.email)) {
+      setError("Please enter a valid email address.");
+      return;
+    }
+
     try {
       const response = await axios.post("http://localhost:5001/api/auth/signup", formData);
       alert(response.data.message);

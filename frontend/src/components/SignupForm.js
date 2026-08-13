@@ -28,7 +28,7 @@ const Signup = () => {
     }
 
     try {
-      const response = await axios.post("http://localhost:5000/api/signup", formData);
+      const response = await axios.post("http://localhost:5001/api/auth/signup", formData);
       alert(response.data.message);
     } catch (err) {
       setError(err.response?.data?.message || "Something went wrong!");
@@ -50,7 +50,7 @@ const Signup = () => {
         />
 
         <input
-          type="text"
+          type="number"
           name="phone"
           placeholder="Phone Number"
           value={formData.phone}

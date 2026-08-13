@@ -1,94 +1,174 @@
 const express = require("express");
 const router = express.Router();
-const jwt = require("jsonwebtoken");
+
 const Lorry = require("../models/Lorry");
-const db = require("../config/db");
+const authMiddleware = require("../middleware/authMiddleware");
 
+// =========================
+// GET ALL LORRIES
+// =========================
+router.get("/", async (req, res) => {
+  try {
 
-// Route to get all lorries
-router.get("/", (req, res) => {
-  const query = `
-    SELECT lorries.*, users.phone AS owner_phone
-    FROM lorries
-    LEFT JOIN users ON lorries.owner_id = users.id
-  `;
-  
-  db.query(query, (err, result) => {
-    if (err) {
-      console.error("Error fetching lorries:", err);
-      return res.status(500).send("Error fetching lorries");
-    }
-    return res.status(200).json(result); // Send all lorries in JSON format
-  });
+    const lorries = await Lorry.findAll();
+
+    res.status(200).json(lorries);
+
+  } catch (error) {
+
+    console.error("Error fetching lorries:", error);
+
+    res.status(500).json({
+      message: "Error fetching lorries",
+      error: error.message
+    });
+
+  }
 });
 
-// Route to get a lorry by registration number
-router.get("/:id", (req, res) => {
-  const lorryId = req.params.id;
-  Lorry.findById(lorryId, (err, lorry) => {
-    if (err) {
-      return res.status(500).json({ error: "Error fetching lorry" });
-    }
+
+// =========================
+// GET LORRY BY ID
+// =========================
+router.get("/:id", async (req, res) => {
+
+  try {
+
+    const lorryId = req.params.id;
+
+    const lorry = await Lorry.findById(lorryId);
+
     if (!lorry) {
-      return res.status(404).json({ error: "Lorry not found" });
+      return res.status(404).json({
+        message: "Lorry not found"
+      });
     }
-    res.json(lorry);
-  });
-});
 
-// Route to add a new lorry
-router.post("/add", (req, res) => {
-  const { registration_number, owner_phone, model, year_built, owner_name } = req.body;
+    res.status(200).json(lorry);
 
-  if (!owner_name || !registration_number || !owner_phone || !model || !year_built) {
-    return res.status(400).send("All fields are required");
+  } catch (error) {
+
+    console.error("Error fetching lorry:", error);
+
+    res.status(500).json({
+      message: "Error fetching lorry",
+      error: error.message
+    });
+
   }
 
-  // Find the owner by phone
-  const findOwnerQuery = "SELECT id FROM users WHERE phone = ?";
-  db.query(findOwnerQuery, [owner_phone], (err, ownerResult) => {
-    if (err) {
-      console.error("Error fetching owner by phone:", err);
-      return res.status(500).send("Error fetching owner");
-    }
-
-    if (ownerResult.length === 0) {
-      return res.status(404).send("Owner not found with the provided phone");
-    }
-
-    const owner_id = ownerResult[0].id;
-
-    // Insert the new lorry into the database
-    const insertQuery = `
-      INSERT INTO lorries (registration_number, owner_id, model, year_built, owner_name)
-      VALUES (?, ?, ?, ?, ?)
-    `;
-
-    db.query(insertQuery, [registration_number, owner_id, model, year_built, owner_name], (err, result) => {
-      if (err) {
-        console.error("Error inserting lorry:", err);
-        return res.status(500).send("Error adding lorry");
-      }
-      return res.status(201).send("Lorry added successfully");
-    });
-  });
 });
 
-// Route to delete a lorry by registration number
-router.delete("/:registrationNumber", (req, res) => {
-  const { registrationNumber } = req.params;
 
-  const deleteQuery = "DELETE FROM lorries WHERE registration_number = ?";
-  db.query(deleteQuery, [registrationNumber], (err, result) => {
-    if (err) {
-      console.error("Error deleting lorry:", err);
-      return res.status(500).send("Error deleting lorry");
+// =========================
+// ADD LORRY
+// =========================
+router.post("/add", authMiddleware, async (req, res) => {
+
+  try {
+
+    const {
+      registration_number,
+      model,
+      year_built,
+      owner_name
+    } = req.body;
+
+    // Only owners can add lorries
+    if (req.user.user_type !== "owner") {
+      return res.status(403).json({
+        message: "Only owners can add a lorry."
+      });
     }
-    if (result.affectedRows === 0) {
-      return res.status(404).send("Lorry not found");
+
+    // Validate fields
+    if (
+      !registration_number ||
+      !model ||
+      !year_built ||
+      !owner_name
+    ) {
+      return res.status(400).json({
+        message: "All fields are required"
+      });
     }
-    return res.status(200).send("Lorry deleted successfully");
-  });
+
+    // Get owner ID from JWT
+    const ownerId = req.user.id;
+
+    const result = await Lorry.addLorry(
+      {
+        registration_number,
+        model,
+        year_built,
+        owner_name
+      },
+      ownerId
+    );
+
+    console.log(
+      "Lorry created with ID:",
+      result.insertId
+    );
+
+    res.status(201).json({
+      message: "Lorry added successfully",
+      lorryId: result.insertId
+    });
+
+  } catch (error) {
+
+    console.error("Error adding lorry:", error);
+
+    res.status(500).json({
+      message: "Error adding lorry",
+      error: error.message
+    });
+
+  }
+
+});
+
+
+// =========================
+// DELETE LORRY
+// =========================
+router.delete("/:id", authMiddleware, async (req, res) => {
+
+  try {
+
+    const lorryId = req.params.id;
+    const userId = req.user.id;
+
+    await Lorry.deleteLorry(
+      lorryId,
+      userId
+    );
+
+    res.status(200).json({
+      message: "Lorry deleted successfully"
+    });
+
+  } catch (error) {
+
+    console.error("Error deleting lorry:", error);
+
+    if (
+      error.message ===
+      "You are not authorized to delete this lorry"
+    ) {
+      return res.status(403).json({
+        message: error.message
+      });
+    }
+
+    res.status(500).json({
+      message: "Error deleting lorry",
+      error: error.message
+    });
+
+  }
+
 });
 
 module.exports = router;

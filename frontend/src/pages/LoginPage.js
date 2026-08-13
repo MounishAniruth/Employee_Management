@@ -22,29 +22,33 @@ const LoginPage = () => {
   };
 
   const handleSubmit = async (e) => {
-    e.preventDefault();
-    try {
-      const response = await axios.post("http://localhost:5001/api/auth/login", loginData);
-      const { token, message } = response.data;
+  e.preventDefault();
+  try {
+    const response = await axios.post("http://localhost:5001/api/auth/login", loginData);
+    const { token, message, user } = response.data; // <-- include 'user'
 
-      localStorage.setItem("authToken", token);
+    // Save token and user info
+    localStorage.setItem("authToken", token);
+    localStorage.setItem("userType", user.user_type); 
+    localStorage.setItem("userName", user.name);
 
-      setSuccess(message);
-      setError("");
-      setOpenSnackbar(true);
+    setSuccess(message);
+    setError("");
+    setOpenSnackbar(true);
 
-      setTimeout(() => {
-        navigate("/home");
-      }, 500); // Navigate after showing success message
-    } catch (err) {
-      if (err.response && err.response.data && err.response.data.message) {
-        setError(err.response.data.message);
-      } else {
-        setError("An error occurred during login. Please try again.");
-      }
-      setSuccess("");
+    setTimeout(() => {
+      navigate("/home");
+    }, 500);
+  } catch (err) {
+    if (err.response?.data?.message) {
+      setError(err.response.data.message);
+    } else {
+      setError("An error occurred during login. Please try again.");
     }
-  };
+    setSuccess("");
+  }
+};
+
 
   const handleCloseSnackbar = () => {
     setOpenSnackbar(false);

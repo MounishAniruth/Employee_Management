@@ -1,34 +1,33 @@
 import React, {
+  useEffect,
   useState,
-  useEffect
+  useCallback
 } from "react";
 
-import styled from "styled-components";
 import { useNavigate } from "react-router-dom";
+
+import styled from "styled-components";
 
 import api from "../utils/api";
 
 import LorryImage from "../assets/images/TN34K3749.jpeg";
 
 
-const HomePage = () => {
+const OwnerPage = () => {
 
   const navigate = useNavigate();
 
 
   // =====================================================
-  // USER INFORMATION
+  // USER
   // =====================================================
-
-  const userType =
-    localStorage.getItem("userType");
 
   const userName =
     localStorage.getItem("userName");
 
 
   // =====================================================
-  // STATES
+  // STATE
   // =====================================================
 
   const [lorries, setLorries] =
@@ -40,15 +39,15 @@ const HomePage = () => {
   const [selectedManagers, setSelectedManagers] =
     useState({});
 
-  const [isFormVisible, setIsFormVisible] =
+  const [loading, setLoading] =
     useState(false);
 
-  const [loading, setLoading] =
+  const [isFormVisible, setIsFormVisible] =
     useState(false);
 
 
   // =====================================================
-  // ADD LORRY FORM
+  // ADD LORRY FORM STATE
   // =====================================================
 
   const [registrationNumber, setRegistrationNumber] =
@@ -68,114 +67,138 @@ const HomePage = () => {
 
 
   // =====================================================
+  // LOGOUT
+  // =====================================================
+
+  const logout = useCallback(() => {
+
+    localStorage.removeItem(
+      "authToken"
+    );
+
+    localStorage.removeItem(
+      "userId"
+    );
+
+    localStorage.removeItem(
+      "userType"
+    );
+
+    localStorage.removeItem(
+      "userName"
+    );
+
+    navigate("/login");
+
+  }, [navigate]);
+
+
+  // =====================================================
   // FETCH LORRIES
   // =====================================================
 
-  const fetchLorries = async () => {
+  const fetchLorries = useCallback(
+    async () => {
 
-    try {
+      try {
 
-      setLoading(true);
+        setLoading(true);
 
-      const response =
-        await api.get("/lorry");
+        const response =
+          await api.get("/lorry");
 
-      setLorries(response.data);
+        setLorries(
+          response.data
+        );
 
-      console.log(
-        "Lorries fetched:",
-        response.data
-      );
+        console.log(
+          "Owner - Lorries:",
+          response.data
+        );
 
-    } catch (error) {
+      } catch (error) {
 
-      console.error(
-        "Error fetching lorries:",
-        error
-      );
+        console.error(
+          "Error fetching lorries:",
+          error
+        );
 
+        if (
+          error.response?.status === 401
+        ) {
 
-      if (
-        error.response?.status === 401
-      ) {
+          logout();
+
+          return;
+        }
 
         alert(
-          "Session expired. Please login again."
+          error.response?.data?.message ||
+          error.response?.data?.error ||
+          "Error fetching lorries."
         );
 
-        localStorage.removeItem(
-          "authToken"
-        );
+      } finally {
 
-        localStorage.removeItem(
-          "userType"
-        );
+        setLoading(false);
 
-        localStorage.removeItem(
-          "userName"
-        );
-
-        navigate("/login");
-
-        return;
       }
 
-
-      alert(
-        error.response?.data?.message ||
-        "Error fetching lorries."
-      );
-
-    } finally {
-
-      setLoading(false);
-
-    }
-
-  };
+    },
+    [logout]
+  );
 
 
   // =====================================================
   // FETCH LORRY MANAGERS
-  // OWNER ONLY
   // =====================================================
 
-  const fetchManagers = async () => {
+  const fetchManagers = useCallback(
+    async () => {
 
-    if (userType !== "owner") {
-      return;
-    }
+      try {
 
+        const response =
+          await api.get(
+            "/lorry/managers"
+          );
 
-    try {
-
-      const response =
-        await api.get(
-          "/lorry/managers"
+        setManagers(
+          response.data
         );
 
-      setManagers(response.data);
+        console.log(
+          "Available lorry managers:",
+          response.data
+        );
 
-      console.log(
-        "Lorry managers:",
-        response.data
-      );
+      } catch (error) {
 
-    } catch (error) {
+        console.error(
+          "Error fetching managers:",
+          error
+        );
 
-      console.error(
-        "Error fetching lorry managers:",
-        error
-      );
+        if (
+          error.response?.status === 401
+        ) {
 
-      alert(
-        error.response?.data?.message ||
-        "Failed to fetch lorry managers."
-      );
+          logout();
 
-    }
+          return;
+        }
 
-  };
+        alert(
+          error.response?.data?.message ||
+          error.response?.data?.error ||
+          "Failed to fetch lorry managers."
+        );
+
+      }
+
+    },
+    [logout]
+  );
 
 
   // =====================================================
@@ -186,15 +209,16 @@ const HomePage = () => {
 
     fetchLorries();
 
-    if (userType === "owner") {
-      fetchManagers();
-    }
+    fetchManagers();
 
-  }, []);
+  }, [
+    fetchLorries,
+    fetchManagers
+  ]);
 
 
   // =====================================================
-  // SHOW / HIDE ADD LORRY
+  // ADD LORRY BUTTON
   // =====================================================
 
   const handleAddLorry = () => {
@@ -213,7 +237,6 @@ const HomePage = () => {
   const handleSubmit = async (e) => {
 
     e.preventDefault();
-
 
     try {
 
@@ -234,12 +257,6 @@ const HomePage = () => {
           ownerName
 
       };
-
-
-      console.log(
-        "Adding lorry:",
-        newLorry
-      );
 
 
       await api.post(
@@ -265,11 +282,8 @@ const HomePage = () => {
 
       setOwnerName("");
 
-
       setIsFormVisible(false);
 
-
-      // Refresh lorries
 
       await fetchLorries();
 
@@ -280,9 +294,18 @@ const HomePage = () => {
         error
       );
 
+      if (
+        error.response?.status === 401
+      ) {
+
+        logout();
+
+        return;
+      }
 
       alert(
         error.response?.data?.message ||
+        error.response?.data?.error ||
         "Failed to add lorry."
       );
 
@@ -307,11 +330,16 @@ const HomePage = () => {
 
 
     if (!confirmed) {
+
       return;
+
     }
 
 
     try {
+
+      setLoading(true);
+
 
       await api.delete(
         `/lorry/${lorryId}`
@@ -339,10 +367,25 @@ const HomePage = () => {
       );
 
 
+      if (
+        error.response?.status === 401
+      ) {
+
+        logout();
+
+        return;
+      }
+
+
       alert(
         error.response?.data?.message ||
+        error.response?.data?.error ||
         "Failed to delete lorry."
       );
+
+    } finally {
+
+      setLoading(false);
 
     }
 
@@ -360,11 +403,8 @@ const HomePage = () => {
 
     setSelectedManagers(
       (previous) => ({
-
         ...previous,
-
         [lorryId]: managerId
-
       })
     );
 
@@ -402,7 +442,9 @@ const HomePage = () => {
 
 
     if (!confirmed) {
+
       return;
+
     }
 
 
@@ -425,13 +467,8 @@ const HomePage = () => {
       );
 
 
-      // Refresh lorries so that
-      // manager information changes
-
       await fetchLorries();
 
-
-      // Clear selected manager
 
       setSelectedManagers(
         (previous) => {
@@ -440,7 +477,9 @@ const HomePage = () => {
             ...previous
           };
 
-          delete updated[lorryId];
+          delete updated[
+            lorryId
+          ];
 
           return updated;
 
@@ -455,8 +494,19 @@ const HomePage = () => {
       );
 
 
+      if (
+        error.response?.status === 401
+      ) {
+
+        logout();
+
+        return;
+      }
+
+
       alert(
         error.response?.data?.message ||
+        error.response?.data?.error ||
         "Failed to assign lorry manager."
       );
 
@@ -484,7 +534,9 @@ const HomePage = () => {
 
 
     if (!confirmed) {
+
       return;
+
     }
 
 
@@ -513,8 +565,19 @@ const HomePage = () => {
       );
 
 
+      if (
+        error.response?.status === 401
+      ) {
+
+        logout();
+
+        return;
+      }
+
+
       alert(
         error.response?.data?.message ||
+        error.response?.data?.error ||
         "Failed to remove lorry manager."
       );
 
@@ -528,7 +591,7 @@ const HomePage = () => {
 
 
   // =====================================================
-  // OPEN LORRY DASHBOARD
+  // OPEN DASHBOARD
   // =====================================================
 
   const handleLorryClick = (
@@ -543,40 +606,12 @@ const HomePage = () => {
 
 
   // =====================================================
-  // LOGOUT
-  // =====================================================
-
-  const handleLogout = () => {
-
-    localStorage.removeItem(
-      "authToken"
-    );
-
-    localStorage.removeItem(
-      "userType"
-    );
-
-    localStorage.removeItem(
-      "userName"
-    );
-
-    navigate("/login");
-
-  };
-
-
-  // =====================================================
-  // PAGE
+  // UI
   // =====================================================
 
   return (
 
     <Container>
-
-
-      {/* =================================================
-          HEADER
-      ================================================= */}
 
       <Header>
 
@@ -585,55 +620,49 @@ const HomePage = () => {
         </CompanyName>
 
 
-        <UserInfo>
+        <UserSection>
 
           <UserName>
-            {userName || "User"}
+            {userName || "Owner"}
           </UserName>
 
+
           <UserRole>
-            {userType
-              ?.replace("_", " ")
-              .toUpperCase()}
+            OWNER
           </UserRole>
 
-        </UserInfo>
 
+          <LogoutButton
+            onClick={logout}
+          >
+            Logout
+          </LogoutButton>
 
-        <LogoutButton
-          onClick={handleLogout}
-        >
-          Logout
-        </LogoutButton>
+        </UserSection>
 
       </Header>
 
 
       {/* =================================================
-          OWNER ONLY - ADD LORRY
+          ADD LORRY
       ================================================= */}
 
-      {userType === "owner" && (
+      <AddLorryButton
+        onClick={handleAddLorry}
+      >
 
-        <AddLorryButton
-          onClick={handleAddLorry}
-        >
+        {isFormVisible
+          ? "Cancel"
+          : "+ Add Lorry"}
 
-          {isFormVisible
-            ? "Cancel"
-            : "Add Lorry"}
-
-        </AddLorryButton>
-
-      )}
+      </AddLorryButton>
 
 
       {/* =================================================
           ADD LORRY FORM
       ================================================= */}
 
-      {userType === "owner" &&
-        isFormVisible && (
+      {isFormVisible && (
 
         <AddLorryForm
           onSubmit={handleSubmit}
@@ -716,13 +745,13 @@ const HomePage = () => {
 
 
       {/* =================================================
-          LORRY LIST
+          LORRIES
       ================================================= */}
 
-      <LorryListContainer>
+      <LorryList>
 
-
-        {loading && lorries.length === 0 ? (
+        {loading &&
+        lorries.length === 0 ? (
 
           <LoadingText>
             Loading lorries...
@@ -731,9 +760,7 @@ const HomePage = () => {
         ) : lorries.length === 0 ? (
 
           <NoLorries>
-            {userType === "lorry_manager"
-              ? "No lorry has been assigned to you."
-              : "No lorries available."}
+            No lorries available.
           </NoLorries>
 
         ) : (
@@ -743,196 +770,181 @@ const HomePage = () => {
 
               <LorryCard
                 key={lorry.id}
-                onClick={() =>
-                  handleLorryClick(
-                    lorry.id
-                  )
-                }
               >
 
+                <CardContent
+                  onClick={() =>
+                    handleLorryClick(
+                      lorry.id
+                    )
+                  }
+                >
 
-                {/* =================================================
-                    OWNER PHONE
-                ================================================= */}
-
-                <OwnerPhoneText>
-                  {lorry.owner_phone ||
-                    "Unknown Owner"}
-                </OwnerPhoneText>
-
-
-                {/* =================================================
-                    LORRY IMAGE
-                ================================================= */}
-
-                <ImageContainer>
-
-                  <img
-                    src={LorryImage}
-                    alt="Lorry"
-                  />
-
-                </ImageContainer>
+                  <OwnerPhone>
+                    {lorry.owner_phone ||
+                      "Unknown Owner"}
+                  </OwnerPhone>
 
 
-                {/* =================================================
-                    LORRY DETAILS
-                ================================================= */}
+                  <ImageContainer>
 
-                <LorryDetails>
+                    <img
+                      src={LorryImage}
+                      alt="Lorry"
+                    />
 
-                  <div>
-                    <strong>
-                      Owner Name:
-                    </strong>{" "}
-                    {lorry.owner_name}
-                  </div>
+                  </ImageContainer>
 
 
-                  <div>
-                    <strong>
-                      Registration:
-                    </strong>{" "}
-                    {lorry.registration_number}
-                  </div>
+                  <Details>
+
+                    <div>
+                      <strong>
+                        Owner:
+                      </strong>{" "}
+                      {lorry.owner_name}
+                    </div>
 
 
-                  <div>
-                    <strong>
-                      Model:
-                    </strong>{" "}
-                    {lorry.model}
-                  </div>
+                    <div>
+                      <strong>
+                        Registration:
+                      </strong>{" "}
+                      {lorry.registration_number}
+                    </div>
 
 
-                  <div>
-                    <strong>
-                      Year Built:
-                    </strong>{" "}
-                    {lorry.year_built}
-                  </div>
+                    <div>
+                      <strong>
+                        Model:
+                      </strong>{" "}
+                      {lorry.model}
+                    </div>
 
 
-                  <ManagerInfo>
+                    <div>
+                      <strong>
+                        Year Built:
+                      </strong>{" "}
+                      {lorry.year_built}
+                    </div>
 
-                    <strong>
-                      Lorry Manager:
-                    </strong>{" "}
 
-                    {lorry.lorry_manager_name
-                      ? `${lorry.lorry_manager_name} (${lorry.lorry_manager_phone})`
-                      : "Not Assigned"}
+                    <ManagerInfo>
 
-                  </ManagerInfo>
+                      <strong>
+                        Lorry Manager:
+                      </strong>{" "}
 
-                </LorryDetails>
+
+                      {lorry.lorry_manager_name
+                        ? `${lorry.lorry_manager_name} (${lorry.lorry_manager_phone})`
+                        : "Not Assigned"}
+
+                    </ManagerInfo>
+
+                  </Details>
+
+                </CardContent>
 
 
                 {/* =================================================
-                    OWNER ONLY - MANAGER ASSIGNMENT
+                    MANAGER ASSIGNMENT
                 ================================================= */}
 
-                {userType === "owner" && (
+                <ManagerSection
+                  onClick={(e) =>
+                    e.stopPropagation()
+                  }
+                >
 
-                  <ManagerSection
-                    onClick={(e) =>
-                      e.stopPropagation()
+                  <ManagerSelect
+                    value={
+                      selectedManagers[
+                        lorry.id
+                      ] || ""
+                    }
+                    onChange={(e) =>
+                      handleManagerChange(
+                        lorry.id,
+                        e.target.value
+                      )
                     }
                   >
 
-                    <ManagerSelect
-                      value={
-                        selectedManagers[
-                          lorry.id
-                        ] || ""
-                      }
-                      onChange={(e) =>
-                        handleManagerChange(
-                          lorry.id,
-                          e.target.value
-                        )
-                      }
-                    >
-
-                      <option value="">
-                        Select Lorry Manager
-                      </option>
+                    <option value="">
+                      Select Lorry Manager
+                    </option>
 
 
-                      {managers.map(
-                        (manager) => (
+                    {managers.map(
+                      (manager) => (
 
-                          <option
-                            key={manager.id}
-                            value={manager.id}
-                          >
+                        <option
+                          key={manager.id}
+                          value={manager.id}
+                        >
 
-                            {manager.name}
-                            {" - "}
-                            {manager.phone}
+                          {manager.name}
+                          {" - "}
+                          {manager.phone}
 
-                          </option>
+                        </option>
 
-                        )
-                      )}
+                      )
+                    )}
 
-                    </ManagerSelect>
+                  </ManagerSelect>
 
 
-                    <ManagerButton
+                  <ManagerButton
+                    onClick={() =>
+                      handleAssignManager(
+                        lorry.id
+                      )
+                    }
+                    disabled={loading}
+                  >
+                    Assign Manager
+                  </ManagerButton>
+
+
+                  {lorry.lorry_manager_id && (
+
+                    <RemoveManagerButton
                       onClick={() =>
-                        handleAssignManager(
+                        handleRemoveManager(
                           lorry.id
                         )
                       }
                       disabled={loading}
                     >
-                      Assign Manager
-                    </ManagerButton>
+                      Remove Manager
+                    </RemoveManagerButton>
 
+                  )}
 
-                    {lorry.lorry_manager_id && (
-
-                      <RemoveManagerButton
-                        onClick={() =>
-                          handleRemoveManager(
-                            lorry.id
-                          )
-                        }
-                        disabled={loading}
-                      >
-                        Remove Manager
-                      </RemoveManagerButton>
-
-                    )}
-
-                  </ManagerSection>
-
-                )}
+                </ManagerSection>
 
 
                 {/* =================================================
-                    OWNER ONLY - DELETE
+                    DELETE
                 ================================================= */}
 
-                {userType === "owner" && (
+                <DeleteButton
+                  onClick={(e) => {
 
-                  <DeleteButton
-                    onClick={(e) => {
+                    e.stopPropagation();
 
-                      e.stopPropagation();
+                    handleDeleteLorry(
+                      lorry.id,
+                      lorry.registration_number
+                    );
 
-                      handleDeleteLorry(
-                        lorry.id,
-                        lorry.registration_number
-                      );
-
-                    }}
-                  >
-                    Delete
-                  </DeleteButton>
-
-                )}
+                  }}
+                >
+                  Delete Lorry
+                </DeleteButton>
 
               </LorryCard>
 
@@ -941,119 +953,88 @@ const HomePage = () => {
 
         )}
 
-      </LorryListContainer>
+      </LorryList>
 
     </Container>
-
   );
-
 };
 
 
-export default HomePage;
+export default OwnerPage;
 
 
 // =====================================================
-// STYLED COMPONENTS
+// STYLES
 // =====================================================
 
 const Container = styled.div`
-
-  display: flex;
-
-  flex-direction: column;
-
-  align-items: center;
-
-  padding: 30px;
-
-  background-color: #f9f9f9;
-
   min-height: 100vh;
-
+  padding: 30px;
+  background-color: #f9f9f9;
 `;
 
 
 const Header = styled.div`
-
   display: flex;
-
-  justify-content: center;
-
   align-items: center;
-
-  width: 100%;
-
-  margin-bottom: 40px;
+  justify-content: center;
 
   position: relative;
 
-  flex-wrap: wrap;
+  width: 100%;
 
   border-bottom: 1px solid #ddd;
 
   padding-bottom: 20px;
-
 `;
 
 
 const CompanyName = styled.h1`
+  margin: 0;
 
   font-size: 3rem;
-
-  font-weight: bold;
 
   color: #333;
 
   text-align: center;
 
-  margin: 0;
-
-  flex-grow: 1;
-
   @media (max-width: 768px) {
-
-    font-size: 2.5rem;
-
+    font-size: 2rem;
   }
-
 `;
 
 
-const UserInfo = styled.div`
+const UserSection = styled.div`
+  position: absolute;
+
+  right: 0;
+
+  top: 0;
 
   text-align: right;
-
-  padding-right: 20px;
-
-  flex-shrink: 0;
-
 `;
 
 
 const UserName = styled.div`
-
-  font-size: 1.5rem;
+  font-size: 1.4rem;
 
   font-weight: bold;
 
   color: #333;
-
 `;
 
 
 const UserRole = styled.div`
-
   font-size: 0.9rem;
 
   color: #666;
 
   margin-top: 5px;
-
 `;
 
 
 const LogoutButton = styled.button`
+  margin-top: 10px;
 
   padding: 10px 20px;
 
@@ -1067,12 +1048,16 @@ const LogoutButton = styled.button`
 
   cursor: pointer;
 
-  margin-left: 20px;
-
+  &:hover {
+    background-color: #d32f2f;
+  }
 `;
 
 
 const AddLorryButton = styled.button`
+  display: block;
+
+  margin: 30px auto 0;
 
   padding: 12px 25px;
 
@@ -1086,32 +1071,30 @@ const AddLorryButton = styled.button`
 
   cursor: pointer;
 
-  margin-top: 30px;
-
   font-size: 16px;
 
+  &:hover {
+    background-color: #43a047;
+  }
 `;
 
 
 const AddLorryForm = styled.form`
-
   display: flex;
 
   flex-direction: column;
 
   gap: 12px;
 
-  margin-top: 30px;
+  margin: 30px auto;
 
   width: 100%;
 
   max-width: 400px;
-
 `;
 
 
 const Input = styled.input`
-
   padding: 12px;
 
   font-size: 16px;
@@ -1123,12 +1106,10 @@ const Input = styled.input`
   width: 100%;
 
   box-sizing: border-box;
-
 `;
 
 
 const SubmitButton = styled.button`
-
   padding: 12px;
 
   background-color: #4caf50;
@@ -1142,12 +1123,10 @@ const SubmitButton = styled.button`
   cursor: pointer;
 
   font-size: 16px;
-
 `;
 
 
-const LorryListContainer = styled.div`
-
+const LorryList = styled.div`
   display: flex;
 
   flex-wrap: wrap;
@@ -1157,50 +1136,52 @@ const LorryListContainer = styled.div`
   gap: 30px;
 
   margin-top: 40px;
-
-  width: 100%;
-
 `;
 
 
 const LorryCard = styled.div`
+  width: 320px;
+
+  padding: 20px;
 
   border: 1px solid #ddd;
 
   border-radius: 12px;
 
-  padding: 20px;
+  background-color: white;
 
-  width: 320px;
-
-  box-shadow: 0 4px 12px
+  box-shadow:
+    0 4px 12px
     rgba(0, 0, 0, 0.1);
+`;
 
-  background-color: #fff;
 
+const CardContent = styled.div`
   text-align: center;
 
   cursor: pointer;
 
-  transition: 0.3s ease-in-out;
-
   &:hover {
-
-    box-shadow: 0 6px 18px
-      rgba(0, 0, 0, 0.2);
-
-    transform: scale(1.03);
-
+    transform: scale(1.01);
   }
+`;
 
+
+const OwnerPhone = styled.div`
+  font-size: 16px;
+
+  font-weight: bold;
+
+  color: #4caf50;
+
+  margin-bottom: 10px;
 `;
 
 
 const ImageContainer = styled.div`
+  width: 100%;
 
   height: 220px;
-
-  width: 100%;
 
   overflow: hidden;
 
@@ -1209,68 +1190,43 @@ const ImageContainer = styled.div`
   margin-bottom: 15px;
 
   img {
-
     width: 100%;
 
     height: 100%;
 
     object-fit: cover;
-
   }
-
 `;
 
 
-const LorryDetails = styled.div`
-
+const Details = styled.div`
   font-size: 14px;
 
   color: #333;
 
   div {
-
     margin: 8px 0;
-
   }
-
-`;
-
-
-const OwnerPhoneText = styled.div`
-
-  font-size: 16px;
-
-  font-weight: bold;
-
-  color: #4caf50;
-
-  margin-bottom: 10px;
-
 `;
 
 
 const ManagerInfo = styled.div`
-
   padding-top: 8px;
 
   border-top: 1px solid #eee;
-
 `;
 
 
 const ManagerSection = styled.div`
-
   margin-top: 15px;
 
   padding-top: 15px;
 
   border-top: 1px solid #ddd;
-
 `;
 
 
 const ManagerSelect = styled.select`
-
   width: 100%;
 
   padding: 10px;
@@ -1282,12 +1238,10 @@ const ManagerSelect = styled.select`
   font-size: 14px;
 
   margin-bottom: 10px;
-
 `;
 
 
 const ManagerButton = styled.button`
-
   width: 100%;
 
   padding: 10px;
@@ -1304,11 +1258,15 @@ const ManagerButton = styled.button`
 
   margin-bottom: 8px;
 
+  &:disabled {
+    opacity: 0.6;
+
+    cursor: not-allowed;
+  }
 `;
 
 
 const RemoveManagerButton = styled.button`
-
   width: 100%;
 
   padding: 10px;
@@ -1323,10 +1281,20 @@ const RemoveManagerButton = styled.button`
 
   cursor: pointer;
 
+  &:disabled {
+    opacity: 0.6;
+
+    cursor: not-allowed;
+  }
 `;
 
 
 const DeleteButton = styled.button`
+  display: block;
+
+  margin: 15px auto 0;
+
+  padding: 8px 15px;
 
   background-color: #f44336;
 
@@ -1334,36 +1302,29 @@ const DeleteButton = styled.button`
 
   border: none;
 
-  padding: 8px 12px;
-
   border-radius: 5px;
 
   cursor: pointer;
 
-  font-size: 14px;
-
-  margin-top: 15px;
-
+  &:hover {
+    background-color: #d32f2f;
+  }
 `;
 
 
 const LoadingText = styled.div`
-
   font-size: 20px;
 
   color: #555;
 
   margin-top: 50px;
-
 `;
 
 
 const NoLorries = styled.div`
-
   font-size: 20px;
 
   color: #555;
 
   margin-top: 50px;
-
 `;

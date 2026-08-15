@@ -1,13 +1,12 @@
 import React, {
   useState,
+  useEffect,
   useCallback
 } from "react";
 
 import {
   useParams
 } from "react-router-dom";
-
-import axios from "axios";
 
 import styled from "styled-components";
 
@@ -29,6 +28,8 @@ import DatePicker from "react-datepicker";
 
 import "react-datepicker/dist/react-datepicker.css";
 
+import api from "../utils/api";
+
 
 const FuelPage = () => {
 
@@ -36,8 +37,23 @@ const FuelPage = () => {
 
 
   // =====================================================
+  // LOGGED-IN USER
+  // =====================================================
+
+  const userType =
+    localStorage.getItem("userType");
+
+  const userName =
+    localStorage.getItem("userName");
+
+
+  // =====================================================
   // STATES
   // =====================================================
+
+  const [lorry, setLorry] =
+    useState(null);
+
 
   const [fuelDetails, setFuelDetails] =
     useState([]);
@@ -71,6 +87,95 @@ const FuelPage = () => {
 
   const [loading, setLoading] =
     useState(false);
+
+
+  const [pageLoading, setPageLoading] =
+    useState(true);
+
+
+  // =====================================================
+  // FETCH LORRY DETAILS
+  // =====================================================
+
+  useEffect(() => {
+
+    const fetchLorry = async () => {
+
+      try {
+
+        setPageLoading(true);
+
+
+        const response =
+          await api.get(
+            `/lorry/${lorryId}`
+          );
+
+
+        setLorry(response.data);
+
+
+        // Automatically set registration number
+
+        setFuelData(
+          (previousData) => ({
+
+            ...previousData,
+
+            registration_number:
+              response.data.registration_number
+
+          })
+        );
+
+
+      } catch (error) {
+
+        console.error(
+          "Error fetching lorry:",
+          error
+        );
+
+
+        if (
+          error.response?.status === 401
+        ) {
+
+          handleUnauthorized();
+
+          return;
+
+        }
+
+
+        if (
+          error.response?.status === 403
+        ) {
+
+          alert(
+            error.response?.data?.message ||
+            "You do not have permission to access this lorry."
+          );
+
+        }
+
+
+      } finally {
+
+        setPageLoading(false);
+
+      }
+
+    };
+
+
+    if (lorryId) {
+
+      fetchLorry();
+
+    }
+
+  }, [lorryId]);
 
 
   // =====================================================
@@ -121,10 +226,124 @@ const FuelPage = () => {
 
 
   // =====================================================
+  // LOGIN SESSION EXPIRED
+  // =====================================================
+
+  const handleUnauthorized = () => {
+
+    localStorage.removeItem(
+      "authToken"
+    );
+
+    localStorage.removeItem(
+      "user"
+    );
+
+    localStorage.removeItem(
+      "userType"
+    );
+
+    localStorage.removeItem(
+      "userName"
+    );
+
+
+    window.location.href =
+      "/login";
+
+  };
+
+
+  // =====================================================
+  // CHECK IF USER CAN MANAGE THIS LORRY
+  // =====================================================
+
+  const canManageThisLorry = () => {
+
+    if (!lorry) {
+      return false;
+    }
+
+
+    // Owner -> all lorries
+
+    if (userType === "owner") {
+      return true;
+    }
+
+
+    // Manager -> all lorries
+
+    if (userType === "manager") {
+      return true;
+    }
+
+
+    // Lorry Manager -> assigned lorry only
+
+    if (userType === "lorry_manager") {
+
+      return (
+        Number(lorry.lorry_manager_id) ===
+        Number(
+          localStorage.getItem("userId")
+        )
+      );
+
+    }
+
+
+    return false;
+
+  };
+
+
+  // =====================================================
   // ADD FUEL
   // =====================================================
 
   const addFuelDetails = async () => {
+
+    // -----------------------------------------------
+    // FRONTEND CHECK
+    // -----------------------------------------------
+
+    if (
+      userType !== "owner" &&
+      userType !== "manager" &&
+      userType !== "lorry_manager"
+    ) {
+
+      alert(
+        "You do not have permission to add fuel details."
+      );
+
+      return;
+
+    }
+
+
+    // -----------------------------------------------
+    // LORRY MANAGER ASSIGNMENT CHECK
+    // -----------------------------------------------
+
+    if (
+      userType === "lorry_manager" &&
+      !canManageThisLorry()
+    ) {
+
+      alert(
+        "You are not assigned to this lorry."
+      );
+
+      return;
+
+    }
+
+
+    // -----------------------------------------------
+    // VALIDATE FIELDS
+    // -----------------------------------------------
 
     if (
       !fuelData.registration_number ||
@@ -150,8 +369,8 @@ const FuelPage = () => {
 
 
       const response =
-        await axios.post(
-          "http://localhost:5001/api/fuel/add",
+        await api.post(
+          "/fuel/add",
           fuelData
         );
 
@@ -167,7 +386,7 @@ const FuelPage = () => {
       );
 
 
-      // Clear entered fields
+      // Clear fields except registration
 
       setFuelData(
         (previousData) => ({
@@ -196,8 +415,46 @@ const FuelPage = () => {
       );
 
 
+      // ---------------------------------------------
+      // 401
+      // ---------------------------------------------
+
+      if (
+        error.response?.status === 401
+      ) {
+
+        alert(
+          "Session expired. Please login again."
+        );
+
+        handleUnauthorized();
+
+        return;
+
+      }
+
+
+      // ---------------------------------------------
+      // 403
+      // ---------------------------------------------
+
+      if (
+        error.response?.status === 403
+      ) {
+
+        alert(
+          error.response?.data?.message ||
+          "You do not have permission to add fuel details for this lorry."
+        );
+
+        return;
+
+      }
+
+
       alert(
         error.response?.data?.error ||
+        error.response?.data?.message ||
         "Failed to add fuel details."
       );
 
@@ -263,14 +520,13 @@ const FuelPage = () => {
 
 
         const response =
-          await axios.get(
+          await api.get(
 
-            `http://localhost:5001/api/fuel/byRegistration/${encodeURIComponent(
+            `/fuel/byRegistration/${encodeURIComponent(
               fuelData.registration_number
             )}`,
 
             {
-
               params: {
 
                 startDate:
@@ -305,11 +561,43 @@ const FuelPage = () => {
         );
 
 
+        if (
+          error.response?.status === 401
+        ) {
+
+          alert(
+            "Session expired. Please login again."
+          );
+
+          handleUnauthorized();
+
+          return;
+
+        }
+
+
+        if (
+          error.response?.status === 403
+        ) {
+
+          setFuelDetails([]);
+
+          alert(
+            error.response?.data?.message ||
+            "You do not have permission to view this fuel information."
+          );
+
+          return;
+
+        }
+
+
         setFuelDetails([]);
 
 
         alert(
           error.response?.data?.error ||
+          error.response?.data?.message ||
           "Failed to fetch fuel details."
         );
 
@@ -334,6 +622,47 @@ const FuelPage = () => {
   const clearFuelRecord =
     async (fuelId) => {
 
+      // -----------------------------------------------
+      // ROLE CHECK
+      // -----------------------------------------------
+
+      if (
+        userType !== "owner" &&
+        userType !== "manager" &&
+        userType !== "lorry_manager"
+      ) {
+
+        alert(
+          "You do not have permission to clear fuel records."
+        );
+
+        return;
+
+      }
+
+
+      // -----------------------------------------------
+      // LORRY MANAGER CHECK
+      // -----------------------------------------------
+
+      if (
+        userType === "lorry_manager" &&
+        !canManageThisLorry()
+      ) {
+
+        alert(
+          "You are not assigned to this lorry."
+        );
+
+        return;
+
+      }
+
+
+      // -----------------------------------------------
+      // CONFIRM
+      // -----------------------------------------------
+
       const confirmed =
         window.confirm(
 
@@ -356,15 +685,14 @@ const FuelPage = () => {
         setLoading(true);
 
 
-        await axios.put(
-
-          `http://localhost:5001/api/fuel/clear/${fuelId}`
-
+        await api.put(
+          `/fuel/clear/${fuelId}`
         );
 
 
-        // Change ONLY the selected row
-        // from pending -> cleared
+        // ---------------------------------------------
+        // UPDATE ROW
+        // ---------------------------------------------
 
         setFuelDetails(
           (previousDetails) =>
@@ -380,7 +708,8 @@ const FuelPage = () => {
 
                     ...fuel,
 
-                    status: "cleared"
+                    status:
+                      "cleared"
 
                   };
 
@@ -390,7 +719,9 @@ const FuelPage = () => {
                 return fuel;
 
               }
+
             )
+
         );
 
 
@@ -407,8 +738,38 @@ const FuelPage = () => {
         );
 
 
+        if (
+          error.response?.status === 401
+        ) {
+
+          alert(
+            "Session expired. Please login again."
+          );
+
+          handleUnauthorized();
+
+          return;
+
+        }
+
+
+        if (
+          error.response?.status === 403
+        ) {
+
+          alert(
+            error.response?.data?.message ||
+            "You do not have permission to clear this fuel record."
+          );
+
+          return;
+
+        }
+
+
         alert(
           error.response?.data?.error ||
+          error.response?.data?.message ||
           "Failed to clear fuel record."
         );
 
@@ -423,6 +784,21 @@ const FuelPage = () => {
 
 
   // =====================================================
+  // LOADING
+  // =====================================================
+
+  if (pageLoading) {
+
+    return (
+      <LoadingMessage>
+        Loading lorry details...
+      </LoadingMessage>
+    );
+
+  }
+
+
+  // =====================================================
   // RENDER
   // =====================================================
 
@@ -430,253 +806,309 @@ const FuelPage = () => {
 
     <StyledContainer>
 
-      <Typography
-        variant="h4"
-        align="center"
-        gutterBottom
-      >
+      {/* =================================================
+          HEADER
+      ================================================= */}
 
-        Fuel Management for Lorry ID: {lorryId}
+      <Header>
 
-      </Typography>
+        <Typography
+          variant="h4"
+          align="center"
+          gutterBottom
+        >
+
+          Fuel Management
+
+        </Typography>
+
+
+        <UserInfo>
+
+          {userName || "User"}
+
+          {userType
+            ? ` (${userType})`
+            : ""}
+
+        </UserInfo>
+
+
+        <LorryInfo>
+
+          Lorry:
+
+          {" "}
+
+          {lorry?.registration_number}
+
+          {" "}
+
+          (ID: {lorryId})
+
+        </LorryInfo>
+
+      </Header>
 
 
       {/* =================================================
           ADD FUEL
       ================================================= */}
 
-      <Section>
+      {(userType === "owner" ||
+        userType === "manager" ||
+        userType === "lorry_manager") && (
 
-        <Typography variant="h6">
-          Add Fuel Details
-        </Typography>
+        <Section>
 
+          <Typography variant="h6">
 
-        <Grid
-          container
-          spacing={2}
-        >
+            Add Fuel Details
 
-          <Grid
-            item
-            xs={12}
-            sm={6}
-          >
-
-            <TextField
-
-              label="Registration Number"
-
-              variant="outlined"
-
-              fullWidth
-
-              name="registration_number"
-
-              value={
-                fuelData.registration_number
-              }
-
-              onChange={
-                handleChange
-              }
-
-            />
-
-          </Grid>
+          </Typography>
 
 
           <Grid
-            item
-            xs={12}
-            sm={6}
+            container
+            spacing={2}
           >
 
-            <TextField
-
-              label="Date Filled"
-
-              type="date"
-
-              variant="outlined"
-
-              fullWidth
-
-              name="date_filled"
-
-              value={
-                fuelData.date_filled
-              }
-
-              onChange={
-                handleChange
-              }
-
-              InputLabelProps={{
-                shrink: true
-              }}
-
-            />
-
-          </Grid>
-
-
-          <Grid
-            item
-            xs={12}
-            sm={6}
-          >
-
-            <TextField
-
-              label="Bunk Name"
-
-              variant="outlined"
-
-              fullWidth
-
-              name="bunk_name"
-
-              value={
-                fuelData.bunk_name
-              }
-
-              onChange={
-                handleChange
-              }
-
-            />
-
-          </Grid>
-
-
-          <Grid
-            item
-            xs={12}
-            sm={6}
-          >
-
-            <TextField
-
-              label="Litres Filled"
-
-              type="number"
-
-              variant="outlined"
-
-              fullWidth
-
-              name="litres_filled"
-
-              value={
-                fuelData.litres_filled
-              }
-
-              onChange={
-                handleChange
-              }
-
-            />
-
-          </Grid>
-
-
-          <Grid
-            item
-            xs={12}
-            sm={6}
-          >
-
-            <TextField
-
-              label="Price Per Litre"
-
-              type="number"
-
-              variant="outlined"
-
-              fullWidth
-
-              name="price_per_litre"
-
-              value={
-                fuelData.price_per_litre
-              }
-
-              onChange={
-                handleChange
-              }
-
-            />
-
-          </Grid>
-
-
-          <Grid
-            item
-            xs={12}
-            sm={6}
-          >
-
-            <TextField
-
-              label="Amount Paid"
-
-              type="number"
-
-              variant="outlined"
-
-              fullWidth
-
-              name="amount_paid"
-
-              value={
-                fuelData.amount_paid
-              }
-
-              onChange={
-                handleChange
-              }
-
-            />
-
-          </Grid>
-
-
-          <Grid
-            item
-            xs={12}
-          >
-
-            <Button
-
-              variant="contained"
-
-              color="primary"
-
-              fullWidth
-
-              onClick={
-                addFuelDetails
-              }
-
-              disabled={
-                loading
-              }
-
+            {/* REGISTRATION NUMBER */}
+
+            <Grid
+              item
+              xs={12}
+              sm={6}
             >
 
-              {loading
-                ? "Processing..."
-                : "Add Fuel"}
+              <TextField
 
-            </Button>
+                label="Registration Number"
+
+                variant="outlined"
+
+                fullWidth
+
+                name="registration_number"
+
+                value={
+                  fuelData.registration_number
+                }
+
+                InputProps={{
+                  readOnly: true
+                }}
+
+              />
+
+            </Grid>
+
+
+            {/* DATE */}
+
+            <Grid
+              item
+              xs={12}
+              sm={6}
+            >
+
+              <TextField
+
+                label="Date Filled"
+
+                type="date"
+
+                variant="outlined"
+
+                fullWidth
+
+                name="date_filled"
+
+                value={
+                  fuelData.date_filled
+                }
+
+                onChange={
+                  handleChange
+                }
+
+                InputLabelProps={{
+                  shrink: true
+                }}
+
+              />
+
+            </Grid>
+
+
+            {/* BUNK NAME */}
+
+            <Grid
+              item
+              xs={12}
+              sm={6}
+            >
+
+              <TextField
+
+                label="Bunk Name"
+
+                variant="outlined"
+
+                fullWidth
+
+                name="bunk_name"
+
+                value={
+                  fuelData.bunk_name
+                }
+
+                onChange={
+                  handleChange
+                }
+
+              />
+
+            </Grid>
+
+
+            {/* LITRES */}
+
+            <Grid
+              item
+              xs={12}
+              sm={6}
+            >
+
+              <TextField
+
+                label="Litres Filled"
+
+                type="number"
+
+                variant="outlined"
+
+                fullWidth
+
+                name="litres_filled"
+
+                value={
+                  fuelData.litres_filled
+                }
+
+                onChange={
+                  handleChange
+                }
+
+              />
+
+            </Grid>
+
+
+            {/* PRICE */}
+
+            <Grid
+              item
+              xs={12}
+              sm={6}
+            >
+
+              <TextField
+
+                label="Price Per Litre"
+
+                type="number"
+
+                variant="outlined"
+
+                fullWidth
+
+                name="price_per_litre"
+
+                value={
+                  fuelData.price_per_litre
+                }
+
+                onChange={
+                  handleChange
+                }
+
+              />
+
+            </Grid>
+
+
+            {/* AMOUNT PAID */}
+
+            <Grid
+              item
+              xs={12}
+              sm={6}
+            >
+
+              <TextField
+
+                label="Amount Paid"
+
+                type="number"
+
+                variant="outlined"
+
+                fullWidth
+
+                name="amount_paid"
+
+                value={
+                  fuelData.amount_paid
+                }
+
+                onChange={
+                  handleChange
+                }
+
+              />
+
+            </Grid>
+
+
+            {/* ADD BUTTON */}
+
+            <Grid
+              item
+              xs={12}
+            >
+
+              <Button
+
+                variant="contained"
+
+                color="primary"
+
+                fullWidth
+
+                onClick={
+                  addFuelDetails
+                }
+
+                disabled={
+                  loading
+                }
+
+              >
+
+                {loading
+                  ? "Processing..."
+                  : "Add Fuel"}
+
+              </Button>
+
+            </Grid>
 
           </Grid>
 
-        </Grid>
+        </Section>
 
-      </Section>
+      )}
 
 
       {/* =================================================
@@ -686,7 +1118,9 @@ const FuelPage = () => {
       <Section>
 
         <Typography variant="h6">
+
           Filter by Date Range
+
         </Typography>
 
 
@@ -695,6 +1129,8 @@ const FuelPage = () => {
           spacing={2}
           alignItems="center"
         >
+
+          {/* START DATE */}
 
           <Grid
             item
@@ -737,6 +1173,8 @@ const FuelPage = () => {
 
           </Grid>
 
+
+          {/* END DATE */}
 
           <Grid
             item
@@ -784,6 +1222,8 @@ const FuelPage = () => {
           </Grid>
 
 
+          {/* FETCH BUTTON */}
+
           <Grid
             item
             xs={12}
@@ -827,7 +1267,9 @@ const FuelPage = () => {
       <Section>
 
         <Typography variant="h6">
+
           Fuel Details
+
         </Typography>
 
 
@@ -836,6 +1278,8 @@ const FuelPage = () => {
         >
 
           <Table>
+
+            {/* TABLE HEADER */}
 
             <TableHead>
 
@@ -878,6 +1322,8 @@ const FuelPage = () => {
             </TableHead>
 
 
+            {/* TABLE BODY */}
+
             <TableBody>
 
               {fuelDetails.length > 0 ? (
@@ -905,38 +1351,44 @@ const FuelPage = () => {
 
 
                       <TableCell>
+
                         ₹
                         {Number(
                           fuel.price_per_litre
                         ).toFixed(2)}
+
                       </TableCell>
 
 
                       <TableCell>
+
                         ₹
                         {Number(
                           fuel.amount_paid
                         ).toFixed(2)}
+
                       </TableCell>
 
 
                       <TableCell>
+
                         ₹
                         {Number(
                           fuel.total_amount
                         ).toFixed(2)}
+
                       </TableCell>
 
 
                       <TableCell>
+
                         ₹
                         {Number(
                           fuel.remaining_amount
                         ).toFixed(2)}
+
                       </TableCell>
 
-
-                      {/* STATUS */}
 
                       <TableCell>
 
@@ -944,30 +1396,50 @@ const FuelPage = () => {
                         "cleared" ? (
 
                           <ClearedLabel>
+
                             Cleared
+
                           </ClearedLabel>
 
                         ) : (
 
-                          <ClearButton
+                          <>
 
-                            variant="contained"
+                            {(userType === "owner" ||
+                              userType === "manager" ||
+                              userType === "lorry_manager") ? (
 
-                            onClick={() =>
-                              clearFuelRecord(
-                                fuel.id
-                              )
-                            }
+                              <ClearButton
 
-                            disabled={
-                              loading
-                            }
+                                variant="contained"
 
-                          >
+                                onClick={() =>
+                                  clearFuelRecord(
+                                    fuel.id
+                                  )
+                                }
 
-                            Clear
+                                disabled={
+                                  loading
+                                }
 
-                          </ClearButton>
+                              >
+
+                                Clear
+
+                              </ClearButton>
+
+                            ) : (
+
+                              <PendingLabel>
+
+                                Pending
+
+                              </PendingLabel>
+
+                            )}
+
+                          </>
 
                         )}
 
@@ -1005,6 +1477,7 @@ const FuelPage = () => {
 
       </Section>
 
+
     </StyledContainer>
 
   );
@@ -1026,6 +1499,54 @@ const StyledContainer = styled.div`
   margin: 0 auto;
 
   padding: 20px;
+
+`;
+
+
+const LoadingMessage = styled.div`
+
+  display: flex;
+
+  justify-content: center;
+
+  align-items: center;
+
+  min-height: 100vh;
+
+  font-size: 24px;
+
+`;
+
+
+const Header = styled.div`
+
+  text-align: center;
+
+  margin-bottom: 30px;
+
+`;
+
+
+const UserInfo = styled.div`
+
+  color: #777;
+
+  font-size: 16px;
+
+  margin-top: 5px;
+
+`;
+
+
+const LorryInfo = styled.div`
+
+  color: #555;
+
+  font-size: 16px;
+
+  margin-top: 8px;
+
+  font-weight: 500;
 
 `;
 
@@ -1077,6 +1598,25 @@ const ClearedLabel = styled.span`
   border-radius: 5px;
 
   background-color: #4caf50;
+
+  color: white;
+
+  font-weight: bold;
+
+  font-size: 14px;
+
+`;
+
+
+const PendingLabel = styled.span`
+
+  display: inline-block;
+
+  padding: 8px 14px;
+
+  border-radius: 5px;
+
+  background-color: #ff9800;
 
   color: white;
 

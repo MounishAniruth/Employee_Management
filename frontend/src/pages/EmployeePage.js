@@ -1,1331 +1,5051 @@
-import React, { useState, useEffect, useCallback } from "react";
+import React, {
+  useCallback,
+  useEffect,
+  useState
+} from "react";
+
+import axios from "axios";
+
 import { useParams } from "react-router-dom";
+
 import styled from "styled-components";
-import api from "../utils/api";
+
+
+// =====================================================
+// API CONFIGURATION
+// =====================================================
+
+const API_BASE_URL =
+  "http://localhost:5001/api";
+
+
+// =====================================================
+// GET TOKEN
+// =====================================================
+
+const getToken = () => {
+
+  return (
+    localStorage.getItem("token") ||
+    localStorage.getItem("authToken") ||
+    ""
+  );
+
+};
+
+
+// =====================================================
+// AXIOS INSTANCE
+// =====================================================
+
+const api = axios.create({
+
+  baseURL: API_BASE_URL,
+
+  headers: {
+    "Content-Type": "application/json"
+  }
+
+});
+
+
+// =====================================================
+// ADD JWT TOKEN TO EVERY REQUEST
+// =====================================================
+
+api.interceptors.request.use(
+  (config) => {
+
+    const token =
+      getToken();
+
+    if (token) {
+
+      config.headers.Authorization =
+        `Bearer ${token}`;
+
+    }
+
+    return config;
+
+  },
+
+  (error) => {
+
+    return Promise.reject(error);
+
+  }
+);
+
+
+// =====================================================
+// EMPLOYEE PAGE
+// =====================================================
 
 const EmployeePage = () => {
+
   const { id } = useParams();
 
+
   // =====================================================
-  // EMPLOYEE FORM DATA
+  // ROLES
   // =====================================================
 
-  const [employeeData, setEmployeeData] = useState({
+  const roles = [
+    "driver",
+    "driller",
+    "worker",
+    "lorry_manager"
+  ];
+
+
+  // =====================================================
+  // ROLE LABELS
+  // =====================================================
+
+  const roleLabels = {
+
+    driver: "🚚 Driver",
+
+    driller: "⚙️ Driller",
+
+    worker: "👷 Worker",
+
+    lorry_manager: "👨‍💼 Lorry Manager"
+
+  };
+
+
+  // =====================================================
+  // SELECTED ROLE
+  // =====================================================
+
+  const [
+    selectedRole,
+    setSelectedRole
+  ] = useState("driver");
+
+
+  // =====================================================
+  // EMPLOYEES
+  // =====================================================
+
+  const [
+    employees,
+    setEmployees
+  ] = useState([]);
+
+
+  // =====================================================
+  // SELECTED EMPLOYEE
+  // =====================================================
+
+  const [
+    selectedEmployee,
+    setSelectedEmployee
+  ] = useState(null);
+
+
+  const [
+    selectedPhone,
+    setSelectedPhone
+  ] = useState(null);
+
+
+  // =====================================================
+  // VIEW MODE
+  // =====================================================
+
+  const [
+    viewMode,
+    setViewMode
+  ] = useState("none");
+
+
+  // =====================================================
+  // LOADING
+  // =====================================================
+
+  const [
+    loading,
+    setLoading
+  ] = useState(false);
+
+
+  // =====================================================
+  // ADD EMPLOYEE MODAL
+  // =====================================================
+
+  const [
+    showAddForm,
+    setShowAddForm
+  ] = useState(false);
+
+
+  const [
+    employeeData,
+    setEmployeeData
+  ] = useState({
+
     name: "",
+
     phone: "",
+
     role: "driver",
-    salary: "",
+
+    salary: ""
+
   });
 
-  // =====================================================
-  // EMPLOYEE LIST
-  // =====================================================
-
-  const [filteredEmployees, setFilteredEmployees] = useState([]);
 
   // =====================================================
-  // FORM VISIBILITY
+  // EXPENSE MODAL
   // =====================================================
 
-  const [isFormVisible, setFormVisible] = useState(false);
-  const [isUpdateFormVisible, setUpdateFormVisible] =
-    useState(false);
+  const [
+    showExpenseForm,
+    setShowExpenseForm
+  ] = useState(false);
+
+
+  const [
+    updatePhone,
+    setUpdatePhone
+  ] = useState("");
+
+
+  const [
+    updateStartDate,
+    setUpdateStartDate
+  ] = useState("");
+
+
+  const [
+    updateEndDate,
+    setUpdateEndDate
+  ] = useState("");
+
+
+  const [
+    expensePaid,
+    setExpensePaid
+  ] = useState("");
+
+
+  const [
+    paymentMethod,
+    setPaymentMethod
+  ] = useState("");
+
 
   // =====================================================
-  // SELECTED EMPLOYEE DETAILS
+  // FIXED SALARY MODAL
   // =====================================================
 
-  const [selectedEmployeeDetails, setSelectedEmployeeDetails] =
-    useState(null);
+  const [
+    showSalaryForm,
+    setShowSalaryForm
+  ] = useState(false);
 
-  const [loading, setLoading] = useState(false);
+
+  const [
+    salaryEmployee,
+    setSalaryEmployee
+  ] = useState(null);
+
+
+  const [
+    newSalary,
+    setNewSalary
+  ] = useState("");
+
+
+  const [
+    salaryEffectiveFrom,
+    setSalaryEffectiveFrom
+  ] = useState("");
+
 
   // =====================================================
-  // UPDATE EXPENSE FORM
+  // SALARY HISTORY
   // =====================================================
 
-  const [updatePhone, setUpdatePhone] = useState("");
-  const [updateStartDate, setUpdateStartDate] = useState("");
-  const [updateEndDate, setUpdateEndDate] = useState("");
-  const [expensePaid, setExpensePaid] = useState("");
-  const [paymentMethod, setPaymentMethod] = useState("");
+  const [
+    salaryHistory,
+    setSalaryHistory
+  ] = useState([]);
+
+
+  const [
+    salaryHistoryLoading,
+    setSalaryHistoryLoading
+  ] = useState(false);
+
 
   // =====================================================
-  // TABLE / CARD VIEW
+  // USER TYPE
   // =====================================================
 
-  const [showTableView, setShowTableView] =
-    useState(false);
+  const getUserType = () => {
 
-  // =====================================================
-  // FETCH EMPLOYEES BY ROLE
-  // =====================================================
+    const directUserType =
+      localStorage.getItem("userType");
 
-  const fetchEmployeesByRole = useCallback(
-    async (role) => {
-      setLoading(true);
+    if (directUserType) {
 
-      try {
-        console.log(
-          "Fetching employees:",
-          `lorry_id = ${id}`,
-          `role = ${role}`
+      return directUserType;
+
+    }
+
+
+    try {
+
+      const user =
+        JSON.parse(
+          localStorage.getItem("user") ||
+          "{}"
         );
 
-        const response = await api.get(
-          `/employee/employeesByRole/${id}/${role}`
-        );
+      return user.user_type || "";
 
-        console.log(
-          "Employees received:",
-          response.data
-        );
+    } catch {
 
-        setFilteredEmployees(response.data);
-      } catch (error) {
-        console.error(
-          "Error fetching employees:",
-          error
-        );
+      return "";
 
-        if (error.response?.status === 401) {
-          alert(
-            "Session expired. Please login again."
-          );
+    }
 
-          localStorage.removeItem("authToken");
-          localStorage.removeItem("user");
+  };
 
-          window.location.href = "/login";
-          return;
-        }
 
-        alert(
-          error.response?.data?.error ||
-            error.response?.data?.message ||
-            "Failed to fetch employees"
-        );
-      } finally {
-        setLoading(false);
+  const userType =
+    getUserType();
+
+
+  const isOwner =
+    userType === "owner";
+      // =====================================================
+  // UNAUTHORIZED HANDLER
+  // =====================================================
+
+  const handleUnauthorized = () => {
+
+    localStorage.removeItem("token");
+
+    localStorage.removeItem("authToken");
+
+    localStorage.removeItem("user");
+
+    localStorage.removeItem("userId");
+
+    localStorage.removeItem("userType");
+
+    localStorage.removeItem("userName");
+
+    window.location.href = "/login";
+
+  };
+
+
+  // =====================================================
+  // FORMAT MONEY
+  // =====================================================
+
+  const formatMoney = (value) => {
+
+    return Number(
+      value || 0
+    ).toLocaleString(
+      "en-IN",
+      {
+        minimumFractionDigits: 2,
+
+        maximumFractionDigits: 2
       }
-    },
-    [id]
-  );
+    );
+
+  };
+
+
+  // =====================================================
+  // FORMAT DATE
+  // =====================================================
+
+  const formatDate = (value) => {
+
+    if (!value) {
+
+      return "N/A";
+
+    }
+
+
+    const date =
+      new Date(value);
+
+
+    if (
+      Number.isNaN(
+        date.getTime()
+      )
+    ) {
+
+      return value;
+
+    }
+
+
+    return date.toLocaleDateString(
+      "en-IN",
+      {
+        day: "2-digit",
+
+        month: "short",
+
+        year: "numeric"
+      }
+    );
+
+  };
+
+
+  // =====================================================
+  // CALCULATE DAYS
+  // =====================================================
+
+  const calculateDays = (
+    startDate,
+    endDate
+  ) => {
+
+    if (
+      !startDate ||
+      !endDate
+    ) {
+
+      return 0;
+
+    }
+
+
+    const start =
+      new Date(startDate);
+
+
+    const end =
+      new Date(endDate);
+
+
+    const difference =
+      (
+        end - start
+      ) /
+      (
+        1000 *
+        60 *
+        60 *
+        24
+      );
+
+
+    return (
+      difference + 1
+    );
+
+  };
+
 
   // =====================================================
   // CALCULATE EMPLOYEE METRICS
   // =====================================================
 
-  const calculateTotalMetrics = (employeeDetails) => {
-    if (
-      !employeeDetails ||
-      !employeeDetails.salaryRecords ||
-      employeeDetails.salaryRecords.length === 0
-    ) {
-      return {
-        totalExpense: 0,
-        totalDays: 0,
-        earnedMoney: 0,
-        remainingAmount: 0,
-      };
-    }
+  const calculateMetrics = (
+    employee
+  ) => {
 
-    // Calculate total expenses
+    const records =
+      Array.isArray(
+        employee?.salaryRecords
+      )
+        ? employee.salaryRecords
+        : [];
+
+
     const totalExpense =
-      employeeDetails.salaryRecords.reduce(
-        (sum, record) =>
-          sum +
-          parseFloat(record.expense_paid || 0),
-        0
-      );
+      records.reduce(
+        (
+          total,
+          record
+        ) => {
 
-    // Calculate total days worked
-    const totalDays =
-      employeeDetails.salaryRecords.reduce(
-        (sum, record) => {
-          if (
-            !record.start_date ||
-            !record.end_date
-          ) {
-            return sum;
-          }
-
-          const start = new Date(
-            record.start_date
+          return (
+            total +
+            Number(
+              record.expense_paid || 0
+            )
           );
 
-          const end = new Date(
-            record.end_date
-          );
-
-          const difference =
-            (end - start) /
-            (1000 * 60 * 60 * 24);
-
-          return sum + difference;
         },
         0
       );
 
-    // Calculate earned money
-    const fixedSalary = Number(
-      employeeDetails.fixed_salary || 0
-    );
 
-    const earnedMoney =
-      (fixedSalary / 30) * totalDays;
+    const totalDays =
+      records.reduce(
+        (
+          total,
+          record
+        ) => {
 
-    // Calculate remaining amount
+          if (
+            record.days_worked !==
+            null &&
+            record.days_worked !==
+            undefined
+          ) {
+
+            return (
+              total +
+              Number(
+                record.days_worked
+              )
+            );
+
+          }
+
+
+          return (
+            total +
+            calculateDays(
+              record.start_date,
+              record.end_date
+            )
+          );
+
+        },
+        0
+      );
+
+
+    const fixedSalary =
+      Number(
+        employee?.fixed_salary ||
+        0
+      );
+
+
+    const earnedAmount =
+      (
+        fixedSalary / 30
+      ) *
+      totalDays;
+
+
     const remainingAmount =
-      earnedMoney - totalExpense;
+      earnedAmount -
+      totalExpense;
+
 
     return {
+
       totalExpense,
+
       totalDays,
-      earnedMoney,
-      remainingAmount,
+
+      fixedSalary,
+
+      earnedAmount,
+
+      remainingAmount
+
     };
+
   };
+
+
+  // =====================================================
+  // FETCH EMPLOYEES BY ROLE
+  // =====================================================
+
+  const fetchEmployeesByRole =
+    useCallback(
+      async (role) => {
+
+        setLoading(true);
+
+
+        try {
+
+          const response =
+            await api.get(
+              `/employee/employeesByRole/${id}/${role}`
+            );
+
+
+          setEmployees(
+            Array.isArray(
+              response.data
+            )
+              ? response.data
+              : []
+          );
+
+
+        } catch (error) {
+
+          console.error(
+            "Error fetching employees:",
+            error
+          );
+
+
+          if (
+            error.response?.status === 401
+          ) {
+
+            handleUnauthorized();
+
+            return;
+
+          }
+
+
+          alert(
+            error.response?.data?.message ||
+            error.response?.data?.error ||
+            "Failed to fetch employees."
+          );
+
+
+          setEmployees([]);
+
+        } finally {
+
+          setLoading(false);
+
+        }
+
+      },
+      [id]
+    );
+
 
   // =====================================================
   // FETCH EMPLOYEE DETAILS
   // =====================================================
 
-  const handleEmployeeNameClick = async (phone) => {
-    try {
-      console.log(
-        "Fetching employee details for:",
-        phone
-      );
+  const fetchEmployeeDetails =
+    async (phone) => {
 
-      // Fetch employee details
-      const employeeResponse = await api.get(
-        `/employee/details/${phone}`
-      );
+      try {
 
-      console.log(
-        "Employee details:",
-        employeeResponse.data
-      );
+        setLoading(true);
 
-      // Fetch salary records
-      const salaryResponse = await api.get(
-        `/salary/${phone}`
-      );
 
-      console.log(
-        "Salary records:",
-        salaryResponse.data
-      );
+        // =============================================
+        // EMPLOYEE DETAILS
+        // =============================================
 
-      // Make sure salary records are always an array
-      const salaryRecords = Array.isArray(
-        salaryResponse.data
-      )
-        ? salaryResponse.data
-        : [];
+        const employeeResponse =
+          await api.get(
+            `/employee/details/${phone}`
+          );
 
-      // Create employee details object
-      const employeeDetails = {
-        ...employeeResponse.data,
-        salaryRecords,
-      };
 
-      // Calculate metrics
-      const metrics =
-        calculateTotalMetrics(
-          employeeDetails
+        let salaryRecords = [];
+
+
+        // =============================================
+        // EXPENSE / SALARY RECORDS
+        // =============================================
+
+        try {
+
+          const salaryResponse =
+            await api.get(
+              `/salary/salaryDetails/${phone}`
+            );
+
+
+          if (
+            Array.isArray(
+              salaryResponse.data
+            )
+          ) {
+
+            salaryRecords =
+              salaryResponse.data;
+
+          } else if (
+            Array.isArray(
+              salaryResponse.data?.records
+            )
+          ) {
+
+            salaryRecords =
+              salaryResponse.data.records;
+
+          } else if (
+            Array.isArray(
+              salaryResponse.data?.data
+            )
+          ) {
+
+            salaryRecords =
+              salaryResponse.data.data;
+
+          }
+
+        } catch (salaryError) {
+
+          console.warn(
+            "Salary records could not be loaded:",
+            salaryError
+          );
+
+
+          if (
+            salaryError.response?.status === 401
+          ) {
+
+            handleUnauthorized();
+
+            return null;
+
+          }
+
+        }
+
+
+        // =============================================
+        // FIXED SALARY HISTORY
+        // =============================================
+
+        let fixedSalaryHistory = [];
+
+
+        try {
+
+          const historyResponse =
+            await api.get(
+              `/salary/fixed/history/${employeeResponse.data.id}`
+            );
+
+
+          if (
+            Array.isArray(
+              historyResponse.data
+            )
+          ) {
+
+            fixedSalaryHistory =
+              historyResponse.data;
+
+          } else if (
+            Array.isArray(
+              historyResponse.data?.history
+            )
+          ) {
+
+            fixedSalaryHistory =
+              historyResponse.data.history;
+
+          } else if (
+            Array.isArray(
+              historyResponse.data?.data
+            )
+          ) {
+
+            fixedSalaryHistory =
+              historyResponse.data.data;
+
+          }
+
+        } catch (historyError) {
+
+          console.warn(
+            "Fixed salary history could not be loaded:",
+            historyError
+          );
+
+
+          if (
+            historyError.response?.status === 401
+          ) {
+
+            handleUnauthorized();
+
+            return null;
+
+          }
+
+        }
+
+
+        // =============================================
+        // COMBINE EVERYTHING
+        // =============================================
+
+        const employee = {
+
+          ...employeeResponse.data,
+
+          salaryRecords,
+
+          fixedSalaryHistory
+
+        };
+
+
+        employee.metrics =
+          calculateMetrics(
+            employee
+          );
+
+
+        setSelectedEmployee(
+          employee
         );
 
-      console.log(
-        "Calculated metrics:",
-        metrics
-      );
 
-      // Save complete employee details
-      setSelectedEmployeeDetails({
-        ...employeeDetails,
-        metrics,
-      });
+        setSalaryHistory(
+          fixedSalaryHistory
+        );
 
-    } catch (error) {
-      console.error(
-        "Error fetching employee details:",
-        error
-      );
 
-      if (error.response?.status === 401) {
+        setSelectedPhone(
+          phone
+        );
+
+
+        return employee;
+
+
+      } catch (error) {
+
+        console.error(
+          "Error fetching employee details:",
+          error
+        );
+
+
+        if (
+          error.response?.status === 401
+        ) {
+
+          handleUnauthorized();
+
+          return null;
+
+        }
+
+
         alert(
-          "Session expired. Please login again."
+          error.response?.data?.message ||
+          error.response?.data?.error ||
+          "Failed to fetch employee details."
         );
 
-        localStorage.removeItem("authToken");
-        localStorage.removeItem("user");
 
-        window.location.href = "/login";
-        return;
+        return null;
+
+
+      } finally {
+
+        setLoading(false);
+
       }
 
-      alert(
-        error.response?.data?.error ||
-          error.response?.data?.message ||
-          "Failed to fetch employee details"
-      );
-    }
-  };
-
-  // =====================================================
-  // CALCULATE DAYS WORKED
+    };
+      // =====================================================
+  // SHOW EMPLOYEE
   // =====================================================
 
-  const calculateDaysWorked = (
-    startDate,
-    endDate
-  ) => {
-    if (!startDate || !endDate) {
-      return 0;
-    }
+  const handleViewEmployee =
+    async (employee) => {
 
-    const start = new Date(startDate);
-    const end = new Date(endDate);
+      if (
+        selectedPhone !==
+        employee.phone
+      ) {
 
-    const timeDifference =
-      end - start;
+        const result =
+          await fetchEmployeeDetails(
+            employee.phone
+          );
 
-    return (
-      timeDifference /
-      (1000 * 3600 * 24)
-    );
-  };
 
-  // =====================================================
-  // UPDATE EMPLOYEE EXPENSE
-  // =====================================================
+        if (!result) {
 
-  const handleUpdateEmployee = async () => {
-    if (!updatePhone) {
-      alert("Please enter employee phone number.");
-      return;
-    }
+          return;
 
-    if (!updateStartDate || !updateEndDate) {
-      alert(
-        "Please select start date and end date."
-      );
-      return;
-    }
+        }
 
-    if (
-      expensePaid === "" ||
-      expensePaid === null
-    ) {
-      alert("Please enter expense paid.");
-      return;
-    }
 
-    try {
-      setLoading(true);
-
-      const updateData = {
-        startDate: updateStartDate,
-        endDate: updateEndDate,
-        expensePaid: Number(expensePaid),
-        expensePaymentMethod: paymentMethod,
-      };
-
-      console.log(
-        "Payload sent to backend:",
-        updateData
-      );
-
-      await api.put(
-        `/employee/updateExpense/${updatePhone}`,
-        updateData
-      );
-
-      alert(
-        "Employee expense updated successfully!"
-      );
-
-      // Close update form
-      setUpdateFormVisible(false);
-
-      // Clear update form
-      setUpdatePhone("");
-      setUpdateStartDate("");
-      setUpdateEndDate("");
-      setExpensePaid("");
-      setPaymentMethod("");
-
-      // Refresh selected employee details
-      await handleEmployeeNameClick(
-        updatePhone
-      );
-
-    } catch (error) {
-      console.error(
-        "Error updating employee:",
-        error
-      );
-
-      if (error.response?.status === 401) {
-        alert(
-          "Session expired. Please login again."
+        setViewMode(
+          "table"
         );
 
-        localStorage.removeItem("authToken");
-        localStorage.removeItem("user");
-
-        window.location.href = "/login";
         return;
+
       }
 
-      alert(
-        error.response?.data?.error ||
-          error.response?.data?.message ||
-          "Failed to update employee."
-      );
-    } finally {
-      setLoading(false);
-    }
-  };
 
-  // =====================================================
-  // DELETE EMPLOYEE
-  // =====================================================
+      if (
+        viewMode === "none"
+      ) {
 
-  const deleteEmployee = async (phone) => {
-    const confirmDelete = window.confirm(
-      `Are you sure you want to delete employee ${phone}?`
-    );
-
-    if (!confirmDelete) {
-      return;
-    }
-
-    setLoading(true);
-
-    try {
-      await api.delete(
-        `/employee/delete/${phone}`
-      );
-
-      alert(
-        "Employee deleted successfully!"
-      );
-
-      // Refresh employee list
-      await fetchEmployeesByRole(
-        employeeData.role
-      );
-
-      // Clear selected employee
-      setSelectedEmployeeDetails(null);
-
-    } catch (error) {
-      console.error(
-        "Error deleting employee:",
-        error
-      );
-
-      if (error.response?.status === 401) {
-        alert(
-          "Session expired. Please login again."
+        setViewMode(
+          "table"
         );
 
-        localStorage.removeItem("authToken");
-        localStorage.removeItem("user");
-
-        window.location.href = "/login";
         return;
+
       }
 
-      alert(
-        error.response?.data?.error ||
-          error.response?.data?.message ||
-          "Failed to delete employee."
+
+      if (
+        viewMode === "table"
+      ) {
+
+        setViewMode(
+          "cards"
+        );
+
+        return;
+
+      }
+
+
+      setViewMode(
+        "table"
       );
-    } finally {
-      setLoading(false);
-    }
-  };
+
+    };
+
+
+  // =====================================================
+  // CHANGE ROLE
+  // =====================================================
+
+  const changeRole =
+    (role) => {
+
+      setSelectedRole(
+        role
+      );
+
+
+      setEmployeeData(
+        previous => ({
+
+          ...previous,
+
+          role
+
+        })
+      );
+
+
+      setSelectedEmployee(
+        null
+      );
+
+
+      setSelectedPhone(
+        null
+      );
+
+
+      setViewMode(
+        "none"
+      );
+
+    };
+
 
   // =====================================================
   // ADD EMPLOYEE
   // =====================================================
 
-  const addEmployee = async () => {
-    if (
-      !employeeData.name ||
-      !employeeData.phone ||
-      !employeeData.salary
-    ) {
-      alert("Please fill all fields.");
-      return;
-    }
+  const addEmployee =
+    async () => {
 
-    setLoading(true);
+      if (
+        !employeeData.name.trim()
+      ) {
 
-    try {
-      const newEmployee = {
-        lorry_id: Number(id),
-        name: employeeData.name,
-        phone: employeeData.phone,
-        role: employeeData.role,
-        fixed_salary: Number(
-          employeeData.salary
-        ),
-      };
-
-      console.log(
-        "Adding employee:",
-        newEmployee
-      );
-
-      await api.post(
-        "/employee/add",
-        newEmployee
-      );
-
-      alert(
-        "Employee added successfully!"
-      );
-
-      // Refresh list
-      await fetchEmployeesByRole(
-        employeeData.role
-      );
-
-      // Clear form
-      setEmployeeData({
-        name: "",
-        phone: "",
-        role: employeeData.role,
-        salary: "",
-      });
-
-      // Hide form
-      setFormVisible(false);
-
-    } catch (error) {
-      console.error(
-        "Error adding employee:",
-        error
-      );
-
-      if (error.response?.status === 401) {
         alert(
-          "Session expired. Please login again."
+          "Please enter employee name."
         );
 
-        localStorage.removeItem("authToken");
-        localStorage.removeItem("user");
-
-        window.location.href = "/login";
         return;
+
       }
 
-      alert(
-        error.response?.data?.error ||
+
+      if (
+        !employeeData.phone.trim()
+      ) {
+
+        alert(
+          "Please enter employee phone."
+        );
+
+        return;
+
+      }
+
+
+      if (
+        employeeData.phone.trim().length <
+        10
+      ) {
+
+        alert(
+          "Please enter a valid phone number."
+        );
+
+        return;
+
+      }
+
+
+      try {
+
+        setLoading(true);
+
+
+        const data = {
+
+          lorry_id:
+            Number(id),
+
+          user_id:
+            null,
+
+          name:
+            employeeData.name.trim(),
+
+          phone:
+            employeeData.phone.trim(),
+
+          role:
+            employeeData.role,
+
+          fixed_salary:
+            employeeData.salary === ""
+              ? 0
+              : Number(
+                  employeeData.salary
+                )
+
+        };
+
+
+        await api.post(
+          "/employee/add",
+          data
+        );
+
+
+        alert(
+          "Employee added successfully."
+        );
+
+
+        setEmployeeData({
+
+          name: "",
+
+          phone: "",
+
+          role: selectedRole,
+
+          salary: ""
+
+        });
+
+
+        setShowAddForm(
+          false
+        );
+
+
+        await fetchEmployeesByRole(
+          selectedRole
+        );
+
+
+      } catch (error) {
+
+        console.error(
+          "Error adding employee:",
+          error
+        );
+
+
+        if (
+          error.response?.status === 401
+        ) {
+
+          handleUnauthorized();
+
+          return;
+
+        }
+
+
+        alert(
           error.response?.data?.message ||
+          error.response?.data?.error ||
           "Failed to add employee."
+        );
+
+
+      } finally {
+
+        setLoading(false);
+
+      }
+
+    };
+
+
+  // =====================================================
+  // DELETE EMPLOYEE
+  // =====================================================
+
+  const deleteEmployee =
+    async (employee) => {
+
+      const confirmed =
+        window.confirm(
+          `Are you sure you want to delete ${employee.name}?`
+        );
+
+
+      if (!confirmed) {
+
+        return;
+
+      }
+
+
+      try {
+
+        setLoading(true);
+
+
+        await api.delete(
+          `/employee/delete/${employee.phone}`
+        );
+
+
+        alert(
+          "Employee deleted successfully."
+        );
+
+
+        if (
+          selectedPhone ===
+          employee.phone
+        ) {
+
+          setSelectedEmployee(
+            null
+          );
+
+          setSelectedPhone(
+            null
+          );
+
+          setViewMode(
+            "none"
+          );
+
+        }
+
+
+        await fetchEmployeesByRole(
+          selectedRole
+        );
+
+
+      } catch (error) {
+
+        console.error(
+          "Error deleting employee:",
+          error
+        );
+
+
+        if (
+          error.response?.status === 401
+        ) {
+
+          handleUnauthorized();
+
+          return;
+
+        }
+
+
+        alert(
+          error.response?.data?.message ||
+          error.response?.data?.error ||
+          "Failed to delete employee."
+        );
+
+
+      } finally {
+
+        setLoading(false);
+
+      }
+
+    };
+
+
+  // =====================================================
+  // OPEN EXPENSE FORM
+  // =====================================================
+
+  const openExpenseForm =
+    (employee) => {
+
+      setUpdatePhone(
+        employee.phone
       );
-    } finally {
-      setLoading(false);
-    }
-  };
+
+
+      setUpdateStartDate(
+        ""
+      );
+
+
+      setUpdateEndDate(
+        ""
+      );
+
+
+      setExpensePaid(
+        ""
+      );
+
+
+      setPaymentMethod(
+        ""
+      );
+
+
+      setShowExpenseForm(
+        true
+      );
+
+    };
+
+
+  // =====================================================
+  // UPDATE EXPENSE
+  // =====================================================
+
+  const handleUpdateExpense =
+    async () => {
+
+      if (
+        !updateStartDate ||
+        !updateEndDate
+      ) {
+
+        alert(
+          "Please select start and end dates."
+        );
+
+        return;
+
+      }
+
+
+      if (
+        new Date(updateEndDate) <
+        new Date(updateStartDate)
+      ) {
+
+        alert(
+          "End date cannot be before start date."
+        );
+
+        return;
+
+      }
+
+
+      if (
+        expensePaid === ""
+      ) {
+
+        alert(
+          "Please enter expense amount."
+        );
+
+        return;
+
+      }
+
+
+      if (
+        !paymentMethod
+      ) {
+
+        alert(
+          "Please select payment method."
+        );
+
+        return;
+
+      }
+
+
+      try {
+
+        setLoading(true);
+
+
+        /*
+         * IMPORTANT:
+         *
+         * This endpoint must exist in your
+         * salaryRoutes.js.
+         *
+         * If your salaryRoutes uses another
+         * endpoint, change this URL accordingly.
+         */
+
+        await api.post(
+          "/salary/add",
+          {
+
+            phone:
+              updatePhone,
+
+            startDate:
+              updateStartDate,
+
+            endDate:
+              updateEndDate,
+
+            expensePaid:
+              Number(
+                expensePaid
+              ),
+
+            expensePaymentMethod:
+              paymentMethod
+
+          }
+        );
+
+
+        alert(
+          "Expense record added successfully."
+        );
+
+
+        setShowExpenseForm(
+          false
+        );
+
+
+        const refreshed =
+          await fetchEmployeeDetails(
+            updatePhone
+          );
+
+
+        if (refreshed) {
+
+          setViewMode(
+            "cards"
+          );
+
+        }
+
+
+        await fetchEmployeesByRole(
+          selectedRole
+        );
+
+
+      } catch (error) {
+
+        console.error(
+          "Error updating expense:",
+          error
+        );
+
+
+        if (
+          error.response?.status === 401
+        ) {
+
+          handleUnauthorized();
+
+          return;
+
+        }
+
+
+        alert(
+          error.response?.data?.message ||
+          error.response?.data?.error ||
+          "Failed to save expense."
+        );
+
+
+      } finally {
+
+        setLoading(false);
+
+      }
+
+    };
+
+
+  // =====================================================
+  // OPEN FIXED SALARY FORM
+  // OWNER ONLY
+  // =====================================================
+
+  const openSalaryForm =
+    async (employee) => {
+
+      if (!isOwner) {
+
+        alert(
+          "Only the owner can update fixed salary."
+        );
+
+        return;
+
+      }
+
+
+      setSalaryEmployee(
+        employee
+      );
+
+
+      setNewSalary(
+
+        Number(
+          employee.fixed_salary ||
+          0
+        ) > 0
+
+          ? Number(
+              employee.fixed_salary
+            )
+
+          : ""
+
+      );
+
+
+      setSalaryEffectiveFrom(
+        ""
+      );
+
+
+      setSalaryHistory(
+        []
+      );
+
+
+      setShowSalaryForm(
+        true
+      );
+
+
+      try {
+
+        setSalaryHistoryLoading(
+          true
+        );
+
+
+        const response =
+          await api.get(
+            `/salary/fixed/history/${employee.id}`
+          );
+
+
+        const history =
+
+          Array.isArray(
+            response.data
+          )
+
+            ? response.data
+
+            : Array.isArray(
+                response.data?.history
+              )
+
+              ? response.data.history
+
+              : Array.isArray(
+                  response.data?.data
+                )
+
+                ? response.data.data
+
+                : [];
+
+
+        setSalaryHistory(
+          history
+        );
+
+
+      } catch (error) {
+
+        console.error(
+          "Error fetching salary history:",
+          error
+        );
+
+
+        if (
+          error.response?.status === 401
+        ) {
+
+          handleUnauthorized();
+
+          return;
+
+        }
+
+
+        setSalaryHistory(
+          []
+        );
+
+
+      } finally {
+
+        setSalaryHistoryLoading(
+          false
+        );
+
+      }
+
+    };
+
+
+  // =====================================================
+  // UPDATE FIXED SALARY
+  // =====================================================
+
+  const handleUpdateFixedSalary =
+    async () => {
+
+      if (!isOwner) {
+
+        alert(
+          "Only the owner can update fixed salary."
+        );
+
+        return;
+
+      }
+
+
+      if (
+        !salaryEmployee?.id
+      ) {
+
+        alert(
+          "Employee information is missing."
+        );
+
+        return;
+
+      }
+
+
+      if (
+        newSalary === "" ||
+        Number(newSalary) < 0
+      ) {
+
+        alert(
+          "Please enter a valid salary."
+        );
+
+        return;
+
+      }
+
+
+      if (
+        !salaryEffectiveFrom
+      ) {
+
+        alert(
+          "Please select the effective date."
+        );
+
+        return;
+
+      }
+
+
+      try {
+
+        setLoading(true);
+
+
+        const response =
+          await api.put(
+            `/salary/fixed/${salaryEmployee.id}`,
+            {
+
+              newSalary:
+                Number(
+                  newSalary
+                ),
+
+              effectiveFrom:
+                salaryEffectiveFrom
+
+            }
+          );
+
+
+        alert(
+          response.data?.message ||
+          "Fixed salary updated successfully."
+        );
+
+
+        // =============================================
+        // REFRESH DETAILS
+        // =============================================
+
+        const phone =
+          salaryEmployee.phone;
+
+
+        const refreshed =
+          await fetchEmployeeDetails(
+            phone
+          );
+
+
+        // =============================================
+        // REFRESH LIST
+        // =============================================
+
+        await fetchEmployeesByRole(
+          selectedRole
+        );
+
+
+        if (refreshed) {
+
+          setSalaryEmployee(
+            refreshed
+          );
+
+        }
+
+
+        setShowSalaryForm(
+          false
+        );
+
+
+      } catch (error) {
+
+        console.error(
+          "Error updating fixed salary:",
+          error
+        );
+
+
+        if (
+          error.response?.status === 401
+        ) {
+
+          handleUnauthorized();
+
+          return;
+
+        }
+
+
+        alert(
+          error.response?.data?.message ||
+          error.response?.data?.error ||
+          "Failed to update fixed salary."
+        );
+
+
+      } finally {
+
+        setLoading(false);
+
+      }
+
+    };
+
 
   // =====================================================
   // INITIAL FETCH
   // =====================================================
 
-  useEffect(() => {
-  // Clear previously selected employee
-  setSelectedEmployeeDetails(null);
+  useEffect(
+    () => {
 
-  // Return to normal card state
-  setShowTableView(false);
+      setSelectedEmployee(
+        null
+      );
 
-  // Close update form
-  setUpdateFormVisible(false);
 
-  // Fetch employees for the selected role
-  fetchEmployeesByRole(employeeData.role);
-}, [
-  employeeData.role,
-  id,
-  fetchEmployeesByRole,
-]);
+      setSelectedPhone(
+        null
+      );
+
+
+      setViewMode(
+        "none"
+      );
+
+
+      fetchEmployeesByRole(
+        selectedRole
+      );
+
+    },
+    [
+      id,
+      selectedRole,
+      fetchEmployeesByRole
+    ]
+  );
+
 
   // =====================================================
-  // TOGGLE TABLE / CARD VIEW
+  // METRICS
   // =====================================================
 
-  const toggleTableView = async (phone) => {
-    if (!showTableView) {
-      await handleEmployeeNameClick(phone);
-    }
-
-    setShowTableView(
-      (prev) => !prev
+  const metrics =
+    selectedEmployee?.metrics ||
+    calculateMetrics(
+      selectedEmployee
     );
-  };
-
-  // =====================================================
-  // OPEN UPDATE FORM
+      // =====================================================
+  // MAIN RENDER
   // =====================================================
 
-  const openUpdateForm = (phone) => {
-    setUpdatePhone(phone);
-    setUpdateFormVisible(true);
-  };
+return (
+  <>
+    <ResponsiveStyle />
 
-  // =====================================================
-  // UI
-  // =====================================================
-
-  return (
-    <Container>
+    <Page>
 
       {/* =================================================
           HEADER
       ================================================= */}
 
       <Header>
-        <LorryTitle>
-          Lorry {id}
-        </LorryTitle>
+
+        <HeaderLeft>
+
+          <TruckIcon>
+            🚛
+          </TruckIcon>
+
+
+          <HeaderText>
+
+            <SmallHeading>
+              EMPLOYEE MANAGEMENT
+            </SmallHeading>
+
+
+            <PageHeading>
+              Lorry {id}
+            </PageHeading>
+
+
+            <Subtitle>
+              Manage employees, salaries and expenses
+            </Subtitle>
+
+          </HeaderText>
+
+        </HeaderLeft>
+
+
+        <AddButton
+          onClick={() => {
+
+            setEmployeeData({
+
+              name: "",
+
+              phone: "",
+
+              role: selectedRole,
+
+              salary: ""
+
+            });
+
+
+            setShowAddForm(
+              true
+            );
+
+          }}
+        >
+          ＋ Add Employee
+        </AddButton>
+
       </Header>
 
-      {/* =================================================
-          ADD EMPLOYEE BUTTON
-      ================================================= */}
-
-      <Button
-        onClick={() =>
-          setFormVisible(true)
-        }
-      >
-        Add Employee
-      </Button>
-
-      {/* =================================================
-          ADD EMPLOYEE FORM
-      ================================================= */}
-
-      {isFormVisible && (
-        <Form>
-
-          <Input
-            type="text"
-            placeholder="Employee Name"
-            value={employeeData.name}
-            onChange={(e) =>
-              setEmployeeData({
-                ...employeeData,
-                name: e.target.value,
-              })
-            }
-          />
-
-          <Input
-            type="text"
-            placeholder="Phone Number"
-            value={employeeData.phone}
-            onChange={(e) =>
-              setEmployeeData({
-                ...employeeData,
-                phone: e.target.value,
-              })
-            }
-          />
-
-          <Select
-            value={employeeData.role}
-            onChange={(e) =>
-              setEmployeeData({
-                ...employeeData,
-                role: e.target.value,
-              })
-            }
-          >
-            <option value="driver">
-              Driver
-            </option>
-
-            <option value="driller">
-              Driller
-            </option>
-
-            <option value="manager">
-              Manager
-            </option>
-
-            <option value="worker">
-              Worker
-            </option>
-          </Select>
-
-          <Input
-            type="number"
-            placeholder="Fixed Salary"
-            value={employeeData.salary}
-            onChange={(e) =>
-              setEmployeeData({
-                ...employeeData,
-                salary: e.target.value,
-              })
-            }
-          />
-
-          <Button
-            onClick={addEmployee}
-            disabled={loading}
-          >
-            {loading
-              ? "Adding..."
-              : "Add Employee"}
-          </Button>
-
-          <Button
-            onClick={() =>
-              setFormVisible(false)
-            }
-          >
-            Cancel
-          </Button>
-
-        </Form>
-      )}
-
-      {/* =================================================
-          UPDATE EXPENSE FORM
-      ================================================= */}
-
-      {isUpdateFormVisible && (
-        <UpdateForm>
-
-          <Input
-            type="text"
-            placeholder="Phone Number"
-            value={updatePhone}
-            onChange={(e) =>
-              setUpdatePhone(
-                e.target.value
-              )
-            }
-          />
-
-          <Input
-            type="date"
-            value={updateStartDate}
-            onChange={(e) =>
-              setUpdateStartDate(
-                e.target.value
-              )
-            }
-          />
-
-          <Input
-            type="date"
-            value={updateEndDate}
-            onChange={(e) =>
-              setUpdateEndDate(
-                e.target.value
-              )
-            }
-          />
-
-          <Input
-            type="number"
-            placeholder="Expense Paid"
-            value={expensePaid}
-            onChange={(e) =>
-              setExpensePaid(
-                e.target.value
-              )
-            }
-          />
-
-          <Select
-            value={paymentMethod}
-            onChange={(e) =>
-              setPaymentMethod(
-                e.target.value
-              )
-            }
-          >
-            <option value="">
-              Select Payment Method
-            </option>
-
-            <option value="Phone Pay">
-              Phone Pay
-            </option>
-
-            <option value="Google Pay">
-              Google Pay
-            </option>
-
-            <option value="Cash">
-              Cash
-            </option>
-
-            <option value="Bank">
-              Bank
-            </option>
-
-            <option value="Office Cash">
-              Office Cash
-            </option>
-
-            <option value="Site Cash">
-              Site Cash
-            </option>
-          </Select>
-
-          <Button
-            onClick={handleUpdateEmployee}
-            disabled={loading}
-          >
-            {loading
-              ? "Updating..."
-              : "Update Employee"}
-          </Button>
-
-          <Button
-            onClick={() =>
-              setUpdateFormVisible(false)
-            }
-          >
-            Cancel
-          </Button>
-
-        </UpdateForm>
-      )}
 
       {/* =================================================
           ROLE TABS
       ================================================= */}
 
       <RoleTabs>
-        {["driver", "driller", "manager", "worker"].map(
-  (role) => (
-    <Tab
-      key={role}
-      onClick={() => {
-        // Change role
-        setEmployeeData({
-          ...employeeData,
-          role,
-        });
 
-        // Clear previously selected employee
-        setSelectedEmployeeDetails(null);
+        {roles.map(
+          (role) => (
 
-        // Return to default view
-        setShowTableView(false);
+            <RoleTab
+              key={role}
+              $active={
+                selectedRole === role
+              }
+              onClick={() =>
+                changeRole(role)
+              }
+            >
 
-        // Close update form
-        setUpdateFormVisible(false);
-      }}
-      $active={employeeData.role === role}
-    >
-      {role.charAt(0).toUpperCase() +
-        role.slice(1)}
-    </Tab>
-  )
-)}
+              {roleLabels[role]}
+
+            </RoleTab>
+
+          )
+        )}
+
       </RoleTabs>
+
+
+      {/* =================================================
+          ADD EMPLOYEE MODAL
+      ================================================= */}
+
+      {showAddForm && (
+
+        <Overlay>
+
+          <Modal>
+
+            <ModalHeader>
+
+              <div>
+
+                <ModalTitle>
+                  Add Employee
+                </ModalTitle>
+
+
+                <ModalSubtitle>
+                  Add employee to Lorry {id}
+                </ModalSubtitle>
+
+              </div>
+
+
+              <CloseButton
+                onClick={() =>
+                  setShowAddForm(
+                    false
+                  )
+                }
+              >
+                ×
+              </CloseButton>
+
+            </ModalHeader>
+
+
+            <FormGrid>
+
+              <Field>
+
+                <Label>
+                  Employee Name
+                </Label>
+
+
+                <Input
+                  value={
+                    employeeData.name
+                  }
+                  placeholder="Enter employee name"
+                  onChange={(e) =>
+                    setEmployeeData(
+                      (previous) => ({
+
+                        ...previous,
+
+                        name:
+                          e.target.value
+
+                      })
+                    )
+                  }
+                />
+
+              </Field>
+
+
+              <Field>
+
+                <Label>
+                  Phone Number
+                </Label>
+
+
+                <Input
+                  value={
+                    employeeData.phone
+                  }
+                  placeholder="Enter phone number"
+                  maxLength={15}
+                  onChange={(e) =>
+                    setEmployeeData(
+                      (previous) => ({
+
+                        ...previous,
+
+                        phone:
+                          e.target.value
+
+                      })
+                    )
+                  }
+                />
+
+              </Field>
+
+
+              <Field>
+
+                <Label>
+                  Role
+                </Label>
+
+
+                <Select
+                  value={
+                    employeeData.role
+                  }
+                  onChange={(e) =>
+                    setEmployeeData(
+                      (previous) => ({
+
+                        ...previous,
+
+                        role:
+                          e.target.value
+
+                      })
+                    )
+                  }
+                >
+
+                  <option value="driver">
+                    Driver
+                  </option>
+
+                  <option value="driller">
+                    Driller
+                  </option>
+
+                  <option value="worker">
+                    Worker
+                  </option>
+
+                  <option value="lorry_manager">
+                    Lorry Manager
+                  </option>
+
+                </Select>
+
+              </Field>
+
+
+              <Field>
+
+                <Label>
+                  Initial Fixed Salary
+                </Label>
+
+
+                <Input
+                  type="number"
+                  min="0"
+                  value={
+                    employeeData.salary
+                  }
+                  placeholder="Leave empty if not assigned"
+                  onChange={(e) =>
+                    setEmployeeData(
+                      (previous) => ({
+
+                        ...previous,
+
+                        salary:
+                          e.target.value
+
+                      })
+                    )
+                  }
+                />
+
+
+                <Hint>
+                  You can leave this empty and
+                  assign salary later.
+                </Hint>
+
+              </Field>
+
+            </FormGrid>
+
+
+            <ModalActions>
+
+              <SecondaryButton
+                onClick={() =>
+                  setShowAddForm(
+                    false
+                  )
+                }
+              >
+                Cancel
+              </SecondaryButton>
+
+
+              <PrimaryButton
+                onClick={
+                  addEmployee
+                }
+                disabled={
+                  loading
+                }
+              >
+
+                {loading
+                  ? "Saving..."
+                  : "Add Employee"}
+
+              </PrimaryButton>
+
+            </ModalActions>
+
+          </Modal>
+
+        </Overlay>
+
+      )}
+
 
       {/* =================================================
           EMPLOYEE LIST
       ================================================= */}
 
-      {loading ? (
-        <LoadingText>
-          Loading...
-        </LoadingText>
-      ) : (
-        <EmployeeList>
+      <EmployeeList>
 
-          {filteredEmployees.length === 0 ? (
-            <NoEmployees>
-              No {employeeData.role}s found
-              for this lorry.
-            </NoEmployees>
-          ) : (
-            filteredEmployees.map(
-              (employee) => (
-                <EmployeeItem
-                  key={employee.phone}
-                >
+        {loading &&
+        employees.length === 0 ? (
 
-                  {/* Employee Name */}
+          <EmptyState>
 
-                  <EmployeeName
+            <EmptyIcon>
+              ⏳
+            </EmptyIcon>
+
+            <EmptyTitle>
+              Loading employees...
+            </EmptyTitle>
+
+          </EmptyState>
+
+        ) : employees.length === 0 ? (
+
+          <EmptyState>
+
+            <EmptyIcon>
+              👥
+            </EmptyIcon>
+
+            <EmptyTitle>
+              No employees found
+            </EmptyTitle>
+
+            <EmptyDescription>
+              No{" "}
+              {selectedRole.replace(
+                "_",
+                " "
+              )}{" "}
+              is assigned to this lorry.
+            </EmptyDescription>
+
+          </EmptyState>
+
+        ) : (
+
+          employees.map(
+            (employee) => (
+
+              <EmployeeRow
+                key={
+                  employee.id
+                }
+                $selected={
+                  selectedPhone ===
+                  employee.phone
+                }
+              >
+
+                {/* =====================================
+                    EMPLOYEE
+                ===================================== */}
+
+                <EmployeeIdentity>
+
+                  <Avatar>
+
+                    {employee.role ===
+                    "driver"
+
+                      ? "🚚"
+
+                      : employee.role ===
+                        "driller"
+
+                        ? "⚙️"
+
+                        : employee.role ===
+                          "worker"
+
+                          ? "👷"
+
+                          : "👨‍💼"}
+
+                  </Avatar>
+
+
+                  <EmployeeBasic>
+
+                    <EmployeeName>
+                      {employee.name}
+                    </EmployeeName>
+
+
+                    <EmployeePhone>
+                      {employee.phone}
+                    </EmployeePhone>
+
+
+                    <RoleBadge>
+                      {employee.role
+                        .replace(
+                          "_",
+                          " "
+                        )
+                        .toUpperCase()}
+                    </RoleBadge>
+
+                  </EmployeeBasic>
+
+                </EmployeeIdentity>
+
+
+                {/* =====================================
+                    SALARY
+                ===================================== */}
+
+                <SalarySmall>
+
+                  <SalaryLabel>
+                    FIXED SALARY
+                  </SalaryLabel>
+
+
+                  {Number(
+                    employee.fixed_salary ||
+                    0
+                  ) > 0 ? (
+
+                    <SalaryValue>
+                      ₹
+                      {formatMoney(
+                        employee.fixed_salary
+                      )}
+                    </SalaryValue>
+
+                  ) : (
+
+                    <NotSet>
+                      Not Set
+                    </NotSet>
+
+                  )}
+
+                </SalarySmall>
+
+
+                {/* =====================================
+                    ACTIONS
+                ===================================== */}
+
+                <EmployeeActions>
+
+                  <ViewButton
                     onClick={() =>
-                      handleEmployeeNameClick(
-                        employee.phone
+                      handleViewEmployee(
+                        employee
                       )
                     }
                   >
-                    {employee.name} (
-                    {employee.phone})
-                  </EmployeeName>
 
-                  {/* Buttons */}
+                    {selectedPhone ===
+                      employee.phone &&
+                    viewMode ===
+                      "table"
 
-                  <EmployeeActions>
+                      ? "Show Cards"
 
-                    <Button
-                      onClick={() =>
-                        toggleTableView(
-                          employee.phone
-                        )
-                      }
-                    >
-                      {showTableView
-                        ? "Show Cards"
+                      : selectedPhone ===
+                          employee.phone &&
+                        viewMode ===
+                          "cards"
+
+                        ? "Show Table"
+
                         : "Show Table"}
-                    </Button>
 
-                    <Button
+                  </ViewButton>
+
+
+                  {isOwner && (
+
+                    <SalaryButton
                       onClick={() =>
-                        deleteEmployee(
-                          employee.phone
+                        openSalaryForm(
+                          employee
                         )
                       }
                     >
-                      Delete
-                    </Button>
+                      💰 Salary
+                    </SalaryButton>
 
-                    <Button
-                      onClick={() =>
-                        openUpdateForm(
-                          employee.phone
-                        )
-                      }
-                    >
-                      Update
-                    </Button>
+                  )}
 
-                  </EmployeeActions>
 
-                </EmployeeItem>
-              )
+                  <ExpenseButton
+                    onClick={() =>
+                      openExpenseForm(
+                        employee
+                      )
+                    }
+                  >
+                    Expense
+                  </ExpenseButton>
+
+
+                  <DeleteButton
+                    onClick={() =>
+                      deleteEmployee(
+                        employee
+                      )
+                    }
+                  >
+                    Delete
+                  </DeleteButton>
+
+                </EmployeeActions>
+
+              </EmployeeRow>
+
             )
-          )}
+          )
 
-        </EmployeeList>
-      )}
+        )}
 
-      {/* =================================================
-          SALARY / EXPENSE TABLE
+      </EmployeeList>
+            {/* =================================================
+          EMPLOYEE DETAILS
       ================================================= */}
 
-      {selectedEmployeeDetails &&
-        showTableView && (
-          <DetailsTable>
+      {selectedEmployee &&
+        selectedPhone && (
 
-            <thead>
-              <tr>
-                <th>Name</th>
-                <th>Phone</th>
-                <th>Start Date</th>
-                <th>End Date</th>
-                <th>Expense</th>
-                <th>Payment Method</th>
-                <th>Days Worked</th>
-              </tr>
-            </thead>
+          <DetailsSection>
 
-            <tbody>
+            {/* ===========================================
+                EMPLOYEE HEADER
+            =========================================== */}
 
-              {selectedEmployeeDetails
-                .salaryRecords &&
-              selectedEmployeeDetails
-                .salaryRecords.length > 0 ? (
+            <DetailsHeader>
 
-                selectedEmployeeDetails.salaryRecords.map(
-                  (record, index) => (
-                    <tr
-                      key={
-                        record.id ||
-                        `${record.start_date}-${index}`
-                      }
-                    >
+              <EmployeeIdentity>
 
-                      <td>
-                        {
-                          selectedEmployeeDetails.name
-                        }
-                      </td>
+                <LargeAvatar>
+                  {selectedEmployee.role ===
+                  "driver"
 
-                      <td>
-                        {
-                          selectedEmployeeDetails.phone
-                        }
-                      </td>
+                    ? "🚚"
 
-                      <td>
-                        {record.start_date}
-                      </td>
+                    : selectedEmployee.role ===
+                      "driller"
 
-                      <td>
-                        {record.end_date}
-                      </td>
+                      ? "⚙️"
 
-                      <td>
-                        ₹
-                        {parseFloat(
-                          record.expense_paid ||
-                            0
-                        ).toFixed(2)}
-                      </td>
+                      : selectedEmployee.role ===
+                        "worker"
 
-                      <td>
-                        {record.expense_payment_method ||
-                          "N/A"}
-                      </td>
+                        ? "👷"
 
-                      <td>
-                        {calculateDaysWorked(
-                          record.start_date,
-                          record.end_date
-                        )}
-                      </td>
+                        : "👨‍💼"}
+                </LargeAvatar>
 
-                    </tr>
-                  )
-                )
+
+                <div>
+
+                  <DetailsName>
+                    {selectedEmployee.name}
+                  </DetailsName>
+
+
+                  <DetailsPhone>
+                    {selectedEmployee.phone}
+                  </DetailsPhone>
+
+                </div>
+
+              </EmployeeIdentity>
+
+
+              <RegistrationBadge>
+
+                {selectedEmployee.registration_number ||
+                  `Lorry ${selectedEmployee.lorry_id}`}
+
+              </RegistrationBadge>
+
+            </DetailsHeader>
+
+
+            {/* ===========================================
+                METRIC CARDS
+            =========================================== */}
+
+            <MetricsGrid>
+
+              {/* FIXED SALARY */}
+
+              <MetricCard>
+
+                <MetricIcon>
+                  💰
+                </MetricIcon>
+
+
+                <MetricLabel>
+                  MONTHLY FIXED SALARY
+                </MetricLabel>
+
+
+                <MetricValue>
+
+                  {metrics.fixedSalary >
+                  0
+
+                    ? `₹${formatMoney(
+                        metrics.fixedSalary
+                      )}`
+
+                    : "Not Set"}
+
+                </MetricValue>
+
+
+                <MetricHint>
+                  Current fixed salary
+                </MetricHint>
+
+              </MetricCard>
+
+
+              {/* DAYS */}
+
+              <MetricCard>
+
+                <MetricIcon>
+                  📅
+                </MetricIcon>
+
+
+                <MetricLabel>
+                  TOTAL DAYS WORKED
+                </MetricLabel>
+
+
+                <MetricValue>
+                  {metrics.totalDays}
+                </MetricValue>
+
+
+                <MetricHint>
+                  Across all records
+                </MetricHint>
+
+              </MetricCard>
+
+
+              {/* EXPENSE */}
+
+              <MetricCard>
+
+                <MetricIcon>
+                  💸
+                </MetricIcon>
+
+
+                <MetricLabel>
+                  TOTAL EXPENSE
+                </MetricLabel>
+
+
+                <ExpenseMetric>
+                  ₹
+                  {formatMoney(
+                    metrics.totalExpense
+                  )}
+                </ExpenseMetric>
+
+
+                <MetricHint>
+                  Total expense paid
+                </MetricHint>
+
+              </MetricCard>
+
+
+              {/* EARNED */}
+
+              <MetricCard>
+
+                <MetricIcon>
+                  📈
+                </MetricIcon>
+
+
+                <MetricLabel>
+                  EARNED AMOUNT
+                </MetricLabel>
+
+
+                <MetricValue>
+                  ₹
+                  {formatMoney(
+                    metrics.earnedAmount
+                  )}
+                </MetricValue>
+
+
+                <MetricHint>
+                  Based on days worked
+                </MetricHint>
+
+              </MetricCard>
+
+
+              {/* REMAINING */}
+
+              <MetricCard>
+
+                <MetricIcon>
+                  🧾
+                </MetricIcon>
+
+
+                <MetricLabel>
+                  REMAINING AMOUNT
+                </MetricLabel>
+
+
+                <RemainingMetric
+                  $negative={
+                    metrics.remainingAmount <
+                    0
+                  }
+                >
+                  ₹
+                  {formatMoney(
+                    metrics.remainingAmount
+                  )}
+                </RemainingMetric>
+
+
+                <MetricHint>
+                  Earned amount − expenses
+                </MetricHint>
+
+              </MetricCard>
+
+
+              {/* ROLE */}
+
+              <MetricCard>
+
+                <MetricIcon>
+                  👤
+                </MetricIcon>
+
+
+                <MetricLabel>
+                  EMPLOYEE ROLE
+                </MetricLabel>
+
+
+                <RoleMetric>
+                  {selectedEmployee.role
+                    .replace(
+                      "_",
+                      " "
+                    )
+                    .replace(
+                      /\b\w/g,
+                      (letter) =>
+                        letter.toUpperCase()
+                    )}
+                </RoleMetric>
+
+
+                <MetricHint>
+                  Assigned to this lorry
+                </MetricHint>
+
+              </MetricCard>
+
+
+              {/* LORRY */}
+
+              <MetricCard>
+
+                <MetricIcon>
+                  🚛
+                </MetricIcon>
+
+
+                <MetricLabel>
+                  LORRY REGISTRATION
+                </MetricLabel>
+
+
+                <RoleMetric>
+                  {selectedEmployee.registration_number ||
+                    selectedEmployee.lorry_id}
+                </RoleMetric>
+
+
+                <MetricHint>
+                  Assigned lorry
+                </MetricHint>
+
+              </MetricCard>
+
+
+              {/* RECORDS */}
+
+              <MetricCard>
+
+                <MetricIcon>
+                  📋
+                </MetricIcon>
+
+
+                <MetricLabel>
+                  EXPENSE RECORDS
+                </MetricLabel>
+
+
+                <MetricValue>
+                  {
+                    selectedEmployee
+                      .salaryRecords
+                      ?.length || 0
+                  }
+                </MetricValue>
+
+
+                <MetricHint>
+                  Salary and expense history
+                </MetricHint>
+
+              </MetricCard>
+
+            </MetricsGrid>
+
+
+            {/* =========================================
+                FIXED SALARY HISTORY
+            ========================================= */}
+
+            <Section>
+
+              <SectionHeader>
+
+                <div>
+
+                  <SectionTitle>
+                    Fixed Salary History
+                  </SectionTitle>
+
+
+                  <SectionSubtitle>
+                    Salary changes made by the owner
+                  </SectionSubtitle>
+
+                </div>
+
+
+                <CountBadge>
+                  {
+                    selectedEmployee
+                      .fixedSalaryHistory
+                      ?.length || 0
+                  } Records
+                </CountBadge>
+
+              </SectionHeader>
+
+
+              {selectedEmployee
+                .fixedSalaryHistory
+                ?.length > 0 ? (
+
+                <HistoryTable>
+
+                  <HistoryHeader>
+
+                    <span>
+                      Salary
+                    </span>
+
+
+                    <span>
+                      Effective From
+                    </span>
+
+
+                    <span>
+                      Effective To
+                    </span>
+
+
+                    <span>
+                      Updated By
+                    </span>
+
+                  </HistoryHeader>
+
+
+                  {selectedEmployee
+                    .fixedSalaryHistory
+                    .map(
+                      (record) => (
+
+                        <HistoryRow
+                          key={
+                            record.id
+                          }
+                        >
+
+                          <HistorySalary>
+                            ₹
+                            {formatMoney(
+                              record.fixed_salary
+                            )}
+                          </HistorySalary>
+
+
+                          <span>
+                            {formatDate(
+                              record.effective_from
+                            )}
+                          </span>
+
+
+                          <span>
+
+                            {record.effective_to
+
+                              ? formatDate(
+                                  record.effective_to
+                                )
+
+                              : "Current"}
+
+                          </span>
+
+
+                          <span>
+                            {record.updated_by_name ||
+                              "Owner"}
+                          </span>
+
+                        </HistoryRow>
+
+                      )
+                    )}
+
+                </HistoryTable>
 
               ) : (
 
-                <tr>
-                  <td colSpan="7">
-                    No salary records found.
-                  </td>
-                </tr>
+                <NoRecords>
+                  No fixed salary history available.
+                </NoRecords>
 
               )}
 
-            </tbody>
+            </Section>
 
-          </DetailsTable>
+
+            {/* =========================================
+                EXPENSE HISTORY
+            ========================================= */}
+
+            <Section>
+
+              <SectionHeader>
+
+                <div>
+
+                  <SectionTitle>
+                    Salary & Expense History
+                  </SectionTitle>
+
+
+                  <SectionSubtitle>
+                    Complete payment and work records
+                  </SectionSubtitle>
+
+                </div>
+
+
+                <CountBadge>
+                  {
+                    selectedEmployee
+                      .salaryRecords
+                      ?.length || 0
+                  } Records
+                </CountBadge>
+
+              </SectionHeader>
+
+
+              {selectedEmployee
+                .salaryRecords
+                ?.length > 0 ? (
+
+                <ExpenseTable>
+
+                  <ExpenseHeader>
+
+                    <span>
+                      Start Date
+                    </span>
+
+
+                    <span>
+                      End Date
+                    </span>
+
+
+                    <span>
+                      Days
+                    </span>
+
+
+                    <span>
+                      Expense
+                    </span>
+
+
+                    <span>
+                      Payment Method
+                    </span>
+
+                  </ExpenseHeader>
+
+
+                  {selectedEmployee
+                    .salaryRecords
+                    .map(
+                      (record) => (
+
+                        <ExpenseRow
+                          key={
+                            record.id
+                          }
+                        >
+
+                          <span>
+                            {formatDate(
+                              record.start_date
+                            )}
+                          </span>
+
+
+                          <span>
+                            {formatDate(
+                              record.end_date
+                            )}
+                          </span>
+
+
+                          <span>
+                            {
+                              record.days_worked ??
+                              calculateDays(
+                                record.start_date,
+                                record.end_date
+                              )
+                            }
+                          </span>
+
+
+                          <ExpenseAmount>
+                            ₹
+                            {formatMoney(
+                              record.expense_paid
+                            )}
+                          </ExpenseAmount>
+
+
+                          <PaymentBadge>
+                            {
+                              record.expense_payment_method ||
+                              "N/A"
+                            }
+                          </PaymentBadge>
+
+                        </ExpenseRow>
+
+                      )
+                    )}
+
+                </ExpenseTable>
+
+              ) : (
+
+                <NoRecords>
+
+                  <NoRecordsIcon>
+                    📋
+                  </NoRecordsIcon>
+
+
+                  <div>
+                    No expense records.
+                  </div>
+
+                </NoRecords>
+
+              )}
+
+            </Section>
+
+
+            {/* =========================================
+                BOTTOM ACTIONS
+            ========================================= */}
+
+            <BottomActions>
+
+              <ExpenseButtonLarge
+                onClick={() =>
+                  openExpenseForm(
+                    selectedEmployee
+                  )
+                }
+              >
+                ＋ Add Expense Record
+              </ExpenseButtonLarge>
+
+
+              {isOwner && (
+
+                <SalaryButtonLarge
+                  onClick={() =>
+                    openSalaryForm(
+                      selectedEmployee
+                    )
+                  }
+                >
+                  💰 Update Fixed Salary
+                </SalaryButtonLarge>
+
+              )}
+
+            </BottomActions>
+
+          </DetailsSection>
+
         )}
-
-      {/* =================================================
-          EMPLOYEE METRICS CARD VIEW
+              {/* =================================================
+          EXPENSE MODAL
       ================================================= */}
 
-      {selectedEmployeeDetails &&
-        !showTableView && (
+      {showExpenseForm && (
 
-          <CardContainer>
+        <Overlay>
 
-            <Card>
-              Name:{" "}
-              {selectedEmployeeDetails.name}
-            </Card>
+          <Modal>
 
-            <Card>
-              Phone:{" "}
-              {selectedEmployeeDetails.phone}
-            </Card>
+            <ModalHeader>
 
-            <Card>
-              Fixed Salary: ₹
-              {Number(
-                selectedEmployeeDetails.fixed_salary ||
-                  0
-              ).toFixed(2)}
-            </Card>
+              <div>
 
-            <Card>
-              Earned Money: ₹
-              {Number(
-                selectedEmployeeDetails
-                  .metrics?.earnedMoney || 0
-              ).toFixed(2)}
-            </Card>
+                <ModalTitle>
+                  Add Expense Record
+                </ModalTitle>
 
-            <Card>
-              Total Expense: ₹
-              {Number(
-                selectedEmployeeDetails
-                  .metrics?.totalExpense || 0
-              ).toFixed(2)}
-            </Card>
 
-            <Card>
-              Remaining Amount: ₹
-              {Number(
-                selectedEmployeeDetails
-                  .metrics?.remainingAmount || 0
-              ).toFixed(2)}
-            </Card>
+                <ModalSubtitle>
+                  Employee: {updatePhone}
+                </ModalSubtitle>
 
-            <Card>
-              Total Days Worked:{" "}
-              {Number(
-                selectedEmployeeDetails
-                  .metrics?.totalDays || 0
-              ).toFixed(2)}
-            </Card>
+              </div>
 
-          </CardContainer>
-        )}
 
-    </Container>
+              <CloseButton
+                onClick={() =>
+                  setShowExpenseForm(
+                    false
+                  )
+                }
+              >
+                ×
+              </CloseButton>
+
+            </ModalHeader>
+
+
+            <FormGrid>
+
+              <Field>
+
+                <Label>
+                  Start Date
+                </Label>
+
+
+                <Input
+                  type="date"
+                  value={
+                    updateStartDate
+                  }
+                  onChange={(e) =>
+                    setUpdateStartDate(
+                      e.target.value
+                    )
+                  }
+                />
+
+              </Field>
+
+
+              <Field>
+
+                <Label>
+                  End Date
+                </Label>
+
+
+                <Input
+                  type="date"
+                  value={
+                    updateEndDate
+                  }
+                  onChange={(e) =>
+                    setUpdateEndDate(
+                      e.target.value
+                    )
+                  }
+                />
+
+              </Field>
+
+
+              <Field>
+
+                <Label>
+                  Expense Paid
+                </Label>
+
+
+                <Input
+                  type="number"
+                  min="0"
+                  value={
+                    expensePaid
+                  }
+                  placeholder="Enter amount"
+                  onChange={(e) =>
+                    setExpensePaid(
+                      e.target.value
+                    )
+                  }
+                />
+
+              </Field>
+
+
+              <Field>
+
+                <Label>
+                  Payment Method
+                </Label>
+
+
+                <Select
+                  value={
+                    paymentMethod
+                  }
+                  onChange={(e) =>
+                    setPaymentMethod(
+                      e.target.value
+                    )
+                  }
+                >
+
+                  <option value="">
+                    Select method
+                  </option>
+
+
+                  <option value="Phone Pay">
+                    Phone Pay
+                  </option>
+
+
+                  <option value="Google Pay">
+                    Google Pay
+                  </option>
+
+
+                  <option value="Cash">
+                    Cash
+                  </option>
+
+
+                  <option value="Bank">
+                    Bank
+                  </option>
+
+
+                  <option value="Office Cash">
+                    Office Cash
+                  </option>
+
+
+                  <option value="Site Cash">
+                    Site Cash
+                  </option>
+
+                </Select>
+
+              </Field>
+
+            </FormGrid>
+
+
+            <ModalActions>
+
+              <SecondaryButton
+                onClick={() =>
+                  setShowExpenseForm(
+                    false
+                  )
+                }
+              >
+                Cancel
+              </SecondaryButton>
+
+
+              <PrimaryButton
+                onClick={
+                  handleUpdateExpense
+                }
+                disabled={
+                  loading
+                }
+              >
+
+                {loading
+                  ? "Saving..."
+                  : "Save Expense"}
+
+              </PrimaryButton>
+
+            </ModalActions>
+
+          </Modal>
+
+        </Overlay>
+
+      )}
+
+
+      {/* =================================================
+          FIXED SALARY MODAL
+      ================================================= */}
+
+      {showSalaryForm && (
+
+        <Overlay>
+
+          <Modal>
+
+            <ModalHeader>
+
+              <div>
+
+                <ModalTitle>
+                  💰 Update Fixed Salary
+                </ModalTitle>
+
+
+                <ModalSubtitle>
+                  Owner-only salary management
+                </ModalSubtitle>
+
+              </div>
+
+
+              <CloseButton
+                onClick={() =>
+                  setShowSalaryForm(
+                    false
+                  )
+                }
+              >
+                ×
+              </CloseButton>
+
+            </ModalHeader>
+
+
+            {/* =========================================
+                EMPLOYEE SALARY CARD
+            ========================================= */}
+
+            <SalaryEmployeeCard>
+
+              <Avatar>
+                👤
+              </Avatar>
+
+
+              <div>
+
+                <SalaryEmployeeName>
+                  {salaryEmployee?.name}
+                </SalaryEmployeeName>
+
+
+                <SalaryEmployeePhone>
+                  {salaryEmployee?.phone}
+                </SalaryEmployeePhone>
+
+              </div>
+
+
+              <CurrentSalary>
+
+                <SalaryLabel>
+                  CURRENT
+                </SalaryLabel>
+
+
+                <SalaryValue>
+
+                  {Number(
+                    salaryEmployee?.fixed_salary ||
+                    0
+                  ) > 0
+
+                    ? `₹${formatMoney(
+                        salaryEmployee.fixed_salary
+                      )}`
+
+                    : "Not Set"}
+
+                </SalaryValue>
+
+              </CurrentSalary>
+
+            </SalaryEmployeeCard>
+
+
+            {/* =========================================
+                SALARY FORM
+            ========================================= */}
+
+            <FormGrid>
+
+              <Field>
+
+                <Label>
+                  New Fixed Salary
+                </Label>
+
+
+                <Input
+                  type="number"
+                  min="0"
+                  value={
+                    newSalary
+                  }
+                  placeholder="Enter monthly salary"
+                  onChange={(e) =>
+                    setNewSalary(
+                      e.target.value
+                    )
+                  }
+                />
+
+              </Field>
+
+
+              <Field>
+
+                <Label>
+                  Effective From
+                </Label>
+
+
+                <Input
+                  type="date"
+                  value={
+                    salaryEffectiveFrom
+                  }
+                  onChange={(e) =>
+                    setSalaryEffectiveFrom(
+                      e.target.value
+                    )
+                  }
+                />
+
+
+                <Hint>
+                  The previous salary will end
+                  automatically.
+                </Hint>
+
+              </Field>
+
+            </FormGrid>
+
+
+            {/* =========================================
+                INFORMATION BOX
+            ========================================= */}
+
+            <SalaryInfoBox>
+
+              <SalaryInfoTitle>
+                How salary history works
+              </SalaryInfoTitle>
+
+
+              <SalaryInfoText>
+
+                When the owner changes the salary,
+                the old salary remains in the
+                history and the new salary starts
+                from the selected effective date.
+
+              </SalaryInfoText>
+
+            </SalaryInfoBox>
+
+
+            {/* =========================================
+                SALARY HISTORY
+            ========================================= */}
+
+            <SalaryHistoryTitle>
+              Salary History
+            </SalaryHistoryTitle>
+
+
+            <SalaryHistoryModal>
+
+              {salaryHistoryLoading ? (
+
+                <NoRecords>
+                  Loading salary history...
+                </NoRecords>
+
+              ) : salaryHistory.length === 0 ? (
+
+                <NoRecords>
+                  No salary history available.
+                </NoRecords>
+
+              ) : (
+
+                salaryHistory.map(
+                  (record) => (
+
+                    <SalaryHistoryItem
+                      key={
+                        record.id
+                      }
+                    >
+
+                      <div>
+
+                        <HistorySalary>
+                          ₹
+                          {formatMoney(
+                            record.fixed_salary
+                          )}
+                        </HistorySalary>
+
+
+                        <HistoryDate>
+
+                          From{" "}
+
+                          {formatDate(
+                            record.effective_from
+                          )}
+
+
+                          {" — "}
+
+
+                          {record.effective_to
+
+                            ? `To ${formatDate(
+                                record.effective_to
+                              )}`
+
+                            : "Current"}
+
+                        </HistoryDate>
+
+                      </div>
+
+
+                      <UpdatedBy>
+
+                        {record.updated_by_name ||
+                          "Owner"}
+
+                      </UpdatedBy>
+
+                    </SalaryHistoryItem>
+
+                  )
+                )
+
+              )}
+
+            </SalaryHistoryModal>
+
+
+            {/* =========================================
+                MODAL ACTIONS
+            ========================================= */}
+
+            <ModalActions>
+
+              <SecondaryButton
+                onClick={() =>
+                  setShowSalaryForm(
+                    false
+                  )
+                }
+              >
+                Cancel
+              </SecondaryButton>
+
+
+              <PrimaryButton
+                onClick={
+                  handleUpdateFixedSalary
+                }
+                disabled={
+                  loading
+                }
+              >
+
+                {loading
+                  ? "Updating..."
+                  : "Update Fixed Salary"}
+
+              </PrimaryButton>
+
+            </ModalActions>
+
+          </Modal>
+
+        </Overlay>
+
+      )}
+
+    </Page>
+
+    </>
   );
+
 };
 
+
+
 // =====================================================
-// STYLED COMPONENTS
+// PAGE
 // =====================================================
 
-const Container = styled.div`
-  padding: 20px;
-  background-color: #f8f9fa;
-  font-family: "Roboto", sans-serif;
-  color: #333;
+const Page = styled.div`
+
   min-height: 100vh;
+
+  padding: 30px;
+
+  box-sizing: border-box;
+
+  background:
+    linear-gradient(
+      135deg,
+      #f8fafc 0%,
+      #eef4ff 100%
+    );
+
+  color: #172554;
+
 `;
+
+
+// =====================================================
+// HEADER
+// =====================================================
 
 const Header = styled.div`
-  text-align: center;
-  margin-bottom: 20px;
-  background-color: #ffffff;
-  padding: 15px 0;
-  box-shadow: 0 2px 4px rgba(0, 0, 0, 0.1);
+
+  background: white;
+
+  border-radius: 20px;
+
+  padding: 24px 28px;
+
+  display: flex;
+
+  align-items: center;
+
+  justify-content: space-between;
+
+  gap: 20px;
+
+  border:
+    1px solid #e2e8f0;
+
+  box-shadow:
+    0 8px 30px
+    rgba(15, 23, 42, 0.08);
+
 `;
 
-const LorryTitle = styled.h2`
-  font-size: 2rem;
-  font-weight: 600;
-  color: #007bff;
+const HeaderLeft = styled.div`
+
+  display: flex;
+
+  align-items: center;
+
+  gap: 18px;
+
 `;
 
-const Button = styled.button`
-  padding: 12px 20px;
-  margin: 10px;
-  font-size: 0.9rem;
-  border-radius: 5px;
+const TruckIcon = styled.div`
+
+  width: 65px;
+
+  height: 65px;
+
+  border-radius: 18px;
+
+  display: flex;
+
+  align-items: center;
+
+  justify-content: center;
+
+  font-size: 34px;
+
+  background: #eff6ff;
+
+`;
+
+const HeaderText = styled.div``;
+
+
+const SmallHeading = styled.div`
+
+  font-size: 11px;
+
+  font-weight: 800;
+
+  letter-spacing: 1.5px;
+
+  color: #64748b;
+
+`;
+
+
+const PageHeading = styled.h1`
+
+  margin: 3px 0;
+
+  font-size: 30px;
+
+  color: #172554;
+
+`;
+
+
+const Subtitle = styled.div`
+
+  color: #64748b;
+
+  font-size: 14px;
+
+`;
+
+
+// =====================================================
+// BUTTONS
+// =====================================================
+
+const AddButton = styled.button`
+
   border: none;
-  background-color: #007bff;
-  color: #ffffff;
+
+  background: #2563eb;
+
+  color: white;
+
+  padding: 13px 20px;
+
+  border-radius: 11px;
+
+  font-weight: 700;
+
+  font-size: 14px;
+
   cursor: pointer;
-  transition: background-color 0.3s;
+
+  transition: 0.2s;
 
   &:hover {
-    background-color: #0056b3;
+
+    background: #1d4ed8;
+
+    transform: translateY(-1px);
+
+  }
+
+`;
+
+
+const PrimaryButton = styled.button`
+
+  border: none;
+
+  background: #2563eb;
+
+  color: white;
+
+  padding: 12px 20px;
+
+  border-radius: 9px;
+
+  font-weight: 700;
+
+  cursor: pointer;
+
+  &:hover {
+
+    background: #1d4ed8;
+
   }
 
   &:disabled {
-    background-color: #cccccc;
+
+    opacity: 0.6;
+
     cursor: not-allowed;
+
   }
+
 `;
 
-const Input = styled.input`
-  padding: 12px;
-  margin: 5px;
-  font-size: 1rem;
-  border: 1px solid #cccccc;
-  border-radius: 5px;
-  width: 100%;
-  max-width: 300px;
-  box-sizing: border-box;
+
+const SecondaryButton = styled.button`
+
+  border:
+    1px solid #cbd5e1;
+
+  background: white;
+
+  color: #334155;
+
+  padding: 12px 20px;
+
+  border-radius: 9px;
+
+  font-weight: 700;
+
+  cursor: pointer;
+
 `;
 
-const Select = styled.select`
-  padding: 12px;
-  margin: 5px;
-  font-size: 1rem;
-  border: 1px solid #cccccc;
-  border-radius: 5px;
-  width: 100%;
-  max-width: 300px;
-`;
 
-const Form = styled.div`
-  display: flex;
-  flex-direction: column;
-  align-items: center;
-  background-color: #ffffff;
-  padding: 20px;
+const ViewButton = styled.button`
+
+  border:
+    1px solid #bfdbfe;
+
+  background: #eff6ff;
+
+  color: #1d4ed8;
+
+  padding: 8px 12px;
+
   border-radius: 8px;
-  box-shadow: 0 2px 6px
-    rgba(0, 0, 0, 0.1);
-  margin: 20px auto;
-  width: 100%;
-  max-width: 500px;
+
+  cursor: pointer;
+
+  font-weight: 700;
+
 `;
 
-const UpdateForm = styled(Form)``;
+
+const SalaryButton = styled.button`
+
+  border:
+    1px solid #bbf7d0;
+
+  background: #f0fdf4;
+
+  color: #15803d;
+
+  padding: 8px 12px;
+
+  border-radius: 8px;
+
+  cursor: pointer;
+
+  font-weight: 700;
+
+`;
+
+
+const ExpenseButton = styled.button`
+
+  border:
+    1px solid #fed7aa;
+
+  background: #fff7ed;
+
+  color: #c2410c;
+
+  padding: 8px 12px;
+
+  border-radius: 8px;
+
+  cursor: pointer;
+
+  font-weight: 700;
+
+`;
+
+
+const DeleteButton = styled.button`
+
+  border:
+    1px solid #fecaca;
+
+  background: #fef2f2;
+
+  color: #dc2626;
+
+  padding: 8px 12px;
+
+  border-radius: 8px;
+
+  cursor: pointer;
+
+  font-weight: 700;
+
+`;
+
+
+// =====================================================
+// ROLE TABS
+// =====================================================
 
 const RoleTabs = styled.div`
-  display: flex;
-  justify-content: center;
-  margin: 20px 0;
-  gap: 10px;
-  flex-wrap: wrap;
+
+  margin-top: 22px;
+
+  display: grid;
+
+  grid-template-columns:
+    repeat(4, 1fr);
+
+  gap: 12px;
+
 `;
 
-const Tab = styled.div`
-  padding: 10px 20px;
-  font-size: 1rem;
-  cursor: pointer;
-  border-radius: 5px;
-  background-color: ${(props) =>
-    props.$active
-      ? "#007bff"
-      : "#e9ecef"};
-  color: ${(props) =>
-    props.$active
-      ? "#ffffff"
-      : "#333"};
-  border: none;
-  transition: all 0.3s;
 
-  &:hover {
-    background-color: ${(props) =>
+const RoleTab = styled.button`
+
+  border:
+    1px solid #e2e8f0;
+
+  background:
+    ${(props) =>
       props.$active
-        ? "#0056b3"
-        : "#d6d6d6"};
-  }
+        ? "#2563eb"
+        : "white"};
+
+  color:
+    ${(props) =>
+      props.$active
+        ? "white"
+        : "#475569"};
+
+  padding: 15px;
+
+  border-radius: 12px;
+
+  font-weight: 700;
+
+  cursor: pointer;
+
+  box-shadow:
+    ${(props) =>
+      props.$active
+        ? "0 7px 20px rgba(37,99,235,.2)"
+        : "none"};
+
 `;
+
+
+// =====================================================
+// EMPLOYEE LIST
+// =====================================================
 
 const EmployeeList = styled.div`
-  display: flex;
-  flex-direction: column;
-  gap: 15px;
+
   margin-top: 20px;
-`;
 
-const EmployeeItem = styled.div`
   display: flex;
-  justify-content: space-between;
-  align-items: center;
-  padding: 15px;
-  background-color: #ffffff;
-  border-radius: 8px;
-  box-shadow: 0 2px 4px
-    rgba(0, 0, 0, 0.1);
 
-  @media (max-width: 768px) {
-    flex-direction: column;
-    gap: 10px;
-  }
+  flex-direction: column;
+
+  gap: 12px;
+
 `;
+
+
+const EmployeeRow = styled.div`
+
+  background: white;
+
+  border:
+    1px solid
+    ${(props) =>
+      props.$selected
+        ? "#93c5fd"
+        : "#e2e8f0"};
+
+  border-radius: 16px;
+
+  padding: 16px 18px;
+
+  display: grid;
+
+  grid-template-columns:
+    1.5fr
+    0.7fr
+    2fr;
+
+  align-items: center;
+
+  gap: 20px;
+
+  box-shadow:
+    0 5px 20px
+    rgba(15,23,42,.05);
+
+`;
+
+
+const EmployeeIdentity = styled.div`
+
+  display: flex;
+
+  align-items: center;
+
+  gap: 13px;
+
+`;
+
+
+const Avatar = styled.div`
+
+  width: 48px;
+
+  height: 48px;
+
+  border-radius: 14px;
+
+  background: #eff6ff;
+
+  display: flex;
+
+  align-items: center;
+
+  justify-content: center;
+
+  font-size: 23px;
+
+`;
+
+
+const LargeAvatar = styled(Avatar)`
+
+  width: 58px;
+
+  height: 58px;
+
+`;
+
+
+const EmployeeBasic = styled.div``;
+
 
 const EmployeeName = styled.div`
-  cursor: pointer;
-  text-decoration: underline;
-  color: blue;
-  font-weight: 500;
+
+  font-size: 16px;
+
+  font-weight: 800;
+
+  color: #172554;
+
 `;
+
+
+const EmployeePhone = styled.div`
+
+  color: #64748b;
+
+  font-size: 13px;
+
+  margin-top: 3px;
+
+`;
+
+
+const RoleBadge = styled.span`
+
+  display: inline-block;
+
+  margin-top: 5px;
+
+  padding: 3px 7px;
+
+  border-radius: 5px;
+
+  background: #f1f5f9;
+
+  color: #475569;
+
+  font-size: 9px;
+
+  font-weight: 800;
+
+`;
+
+
+const SalarySmall = styled.div``;
+
+
+const SalaryLabel = styled.div`
+
+  color: #64748b;
+
+  font-size: 9px;
+
+  font-weight: 800;
+
+  letter-spacing: .5px;
+
+`;
+
+
+const SalaryValue = styled.div`
+
+  color: #15803d;
+
+  font-size: 17px;
+
+  font-weight: 800;
+
+  margin-top: 4px;
+
+`;
+
+
+const NotSet = styled.div`
+
+  color: #94a3b8;
+
+  font-size: 14px;
+
+  font-weight: 700;
+
+  margin-top: 4px;
+
+`;
+
 
 const EmployeeActions = styled.div`
+
   display: flex;
+
+  justify-content: flex-end;
+
   align-items: center;
+
   flex-wrap: wrap;
-  justify-content: center;
-`;
 
-const LoadingText = styled.p`
+  gap: 7px;
+
+`;
+// =====================================================
+// EMPTY STATE
+// =====================================================
+
+const EmptyState = styled.div`
+
+  background: white;
+
+  border:
+    1px dashed #cbd5e1;
+
+  border-radius: 16px;
+
+  padding: 55px 20px;
+
   text-align: center;
-  font-size: 1.1rem;
-  margin-top: 30px;
+
 `;
 
-const NoEmployees = styled.p`
-  text-align: center;
-  padding: 30px;
-  background-color: #ffffff;
-  border-radius: 8px;
-  box-shadow: 0 2px 4px
-    rgba(0, 0, 0, 0.1);
+
+const EmptyIcon = styled.div`
+
+  font-size: 42px;
+
 `;
 
-const DetailsTable = styled.table`
-  width: 100%;
-  border-collapse: collapse;
-  margin: 20px 0;
-  background-color: #ffffff;
-  box-shadow: 0 2px 6px
-    rgba(0, 0, 0, 0.1);
+
+const EmptyTitle = styled.div`
+
+  margin-top: 10px;
+
+  font-size: 18px;
+
+  font-weight: 800;
+
+`;
+
+
+const EmptyDescription = styled.div`
+
+  margin-top: 6px;
+
+  color: #64748b;
+
+`;
+
+
+// =====================================================
+// DETAILS
+// =====================================================
+
+const DetailsSection = styled.div`
+
+  margin-top: 22px;
+
+`;
+
+
+const DetailsHeader = styled.div`
+
+  background: white;
+
+  border-radius: 16px;
+
+  padding: 18px 22px;
+
+  border:
+    1px solid #e2e8f0;
+
+  display: flex;
+
+  align-items: center;
+
+  justify-content: space-between;
+
+`;
+
+
+const DetailsName = styled.div`
+
+  font-size: 20px;
+
+  font-weight: 800;
+
+`;
+
+
+const DetailsPhone = styled.div`
+
+  color: #64748b;
+
+  font-size: 13px;
+
+  margin-top: 3px;
+
+`;
+
+
+const RegistrationBadge = styled.div`
+
+  background: #eef2ff;
+
+  color: #3730a3;
+
+  padding: 8px 12px;
+
   border-radius: 8px;
+
+  font-weight: 800;
+
+  font-size: 12px;
+
+`;
+
+
+// =====================================================
+// METRIC GRID
+// =====================================================
+
+const MetricsGrid = styled.div`
+
+  display: grid;
+
+  grid-template-columns:
+    repeat(4, 1fr);
+
+  gap: 14px;
+
+  margin-top: 14px;
+
+`;
+
+
+const MetricCard = styled.div`
+
+  background: white;
+
+  border:
+    1px solid #e2e8f0;
+
+  border-radius: 15px;
+
+  padding: 18px;
+
+  min-height: 125px;
+
+`;
+
+
+const MetricIcon = styled.div`
+
+  font-size: 20px;
+
+`;
+
+
+const MetricLabel = styled.div`
+
+  font-size: 9px;
+
+  font-weight: 800;
+
+  color: #64748b;
+
+  margin-top: 8px;
+
+`;
+
+
+const MetricValue = styled.div`
+
+  color: #172554;
+
+  font-size: 21px;
+
+  font-weight: 800;
+
+  margin-top: 6px;
+
+`;
+
+
+const ExpenseMetric = styled(
+  MetricValue
+)`
+
+  color: #dc2626;
+
+`;
+
+
+const RemainingMetric = styled(
+  MetricValue
+)`
+
+  color:
+    ${(props) =>
+      props.$negative
+        ? "#dc2626"
+        : "#15803d"};
+
+`;
+
+
+const RoleMetric = styled.div`
+
+  font-size: 16px;
+
+  font-weight: 800;
+
+  color: #172554;
+
+  margin-top: 8px;
+
+`;
+
+
+const MetricHint = styled.div`
+
+  color: #94a3b8;
+
+  font-size: 11px;
+
+  margin-top: 4px;
+
+`;
+// =====================================================
+// SECTION
+// =====================================================
+
+const Section = styled.div`
+
+  background: white;
+
+  border:
+    1px solid #e2e8f0;
+
+  border-radius: 16px;
+
+  margin-top: 16px;
+
+  padding: 20px;
+
+`;
+
+
+const SectionHeader = styled.div`
+
+  display: flex;
+
+  justify-content: space-between;
+
+  align-items: center;
+
+  margin-bottom: 15px;
+
+`;
+
+
+const SectionTitle = styled.h3`
+
+  margin: 0;
+
+  color: #172554;
+
+`;
+
+
+const SectionSubtitle = styled.div`
+
+  color: #64748b;
+
+  font-size: 12px;
+
+  margin-top: 4px;
+
+`;
+
+
+const CountBadge = styled.span`
+
+  background: #eff6ff;
+
+  color: #1d4ed8;
+
+  padding: 6px 10px;
+
+  border-radius: 8px;
+
+  font-size: 11px;
+
+  font-weight: 800;
+
+`;
+
+
+// =====================================================
+// FIXED SALARY HISTORY TABLE
+// =====================================================
+
+const HistoryTable = styled.div`
+
+  border:
+    1px solid #e2e8f0;
+
+  border-radius: 10px;
+
   overflow: hidden;
 
-  th,
-  td {
-    padding: 12px 15px;
-    text-align: left;
-    border-bottom: 1px solid #e9ecef;
-  }
-
-  th {
-    background-color: #007bff;
-    color: #ffffff;
-  }
-
-  tr:last-child td {
-    border-bottom: none;
-  }
-
-  @media (max-width: 768px) {
-    font-size: 0.8rem;
-
-    th,
-    td {
-      padding: 8px;
-    }
-  }
 `;
 
-const CardContainer = styled.div`
+
+const HistoryHeader = styled.div`
+
   display: grid;
-  grid-template-columns: repeat(3, 1fr);
-  gap: 20px;
-  padding: 20px;
 
-  @media (max-width: 900px) {
-    grid-template-columns: repeat(2, 1fr);
-  }
+  grid-template-columns:
+    1fr 1fr 1fr 1fr;
 
-  @media (max-width: 600px) {
-    grid-template-columns: 1fr;
-  }
+  background: #f8fafc;
+
+  padding: 12px 15px;
+
+  font-size: 11px;
+
+  font-weight: 800;
+
+  color: #64748b;
+
 `;
 
-const Card = styled.div`
-  padding: 20px;
-  border-radius: 12px;
-  box-shadow: 0 2px 10px
-    rgba(0, 0, 0, 0.1);
+
+const HistoryRow = styled.div`
+
+  display: grid;
+
+  grid-template-columns:
+    1fr 1fr 1fr 1fr;
+
+  padding: 13px 15px;
+
+  border-top:
+    1px solid #f1f5f9;
+
+  align-items: center;
+
+  font-size: 13px;
+
+`;
+
+
+const HistorySalary = styled.div`
+
+  color: #15803d;
+
+  font-weight: 800;
+
+`;
+
+
+// =====================================================
+// EXPENSE TABLE
+// =====================================================
+
+const ExpenseTable = styled.div`
+
+  border:
+    1px solid #e2e8f0;
+
+  border-radius: 10px;
+
+  overflow: hidden;
+
+`;
+
+
+const ExpenseHeader = styled.div`
+
+  display: grid;
+
+  grid-template-columns:
+    1fr
+    1fr
+    .6fr
+    1fr
+    1.3fr;
+
+  background: #f8fafc;
+
+  padding: 12px 15px;
+
+  font-size: 11px;
+
+  font-weight: 800;
+
+  color: #64748b;
+
+`;
+
+
+const ExpenseRow = styled.div`
+
+  display: grid;
+
+  grid-template-columns:
+    1fr
+    1fr
+    .6fr
+    1fr
+    1.3fr;
+
+  padding: 13px 15px;
+
+  border-top:
+    1px solid #f1f5f9;
+
+  align-items: center;
+
+  font-size: 13px;
+
+`;
+
+
+const ExpenseAmount = styled.div`
+
+  color: #dc2626;
+
+  font-weight: 800;
+
+`;
+
+
+const PaymentBadge = styled.span`
+
+  display: inline-block;
+
+  background: #f1f5f9;
+
+  padding: 5px 8px;
+
+  border-radius: 6px;
+
+  color: #475569;
+
+  font-size: 11px;
+
+  width: fit-content;
+
+`;
+
+
+const NoRecords = styled.div`
+
+  padding: 30px;
+
   text-align: center;
-  background-color: white;
-  font-size: 1rem;
-  font-weight: bold;
+
+  color: #64748b;
+
 `;
 
-export {
-  Container,
-  Header,
-  LorryTitle,
-  Button,
-  Input,
-  Select,
-  Form,
-  UpdateForm,
-  RoleTabs,
-  Tab,
-  EmployeeList,
-  EmployeeItem,
-  DetailsTable,
-  CardContainer,
-};
+
+const NoRecordsIcon = styled.div`
+
+  font-size: 30px;
+
+  margin-bottom: 7px;
+
+`;
+
+
+// =====================================================
+// BOTTOM ACTIONS
+// =====================================================
+
+const BottomActions = styled.div`
+
+  display: flex;
+
+  justify-content: flex-end;
+
+  gap: 10px;
+
+  margin-top: 16px;
+
+`;
+
+
+const ExpenseButtonLarge = styled(
+  ExpenseButton
+)`
+
+  padding: 12px 18px;
+
+`;
+
+
+const SalaryButtonLarge = styled(
+  SalaryButton
+)`
+
+  padding: 12px 18px;
+
+`;
+
+// =====================================================
+// MODAL OVERLAY
+// =====================================================
+
+const Overlay = styled.div`
+
+  position: fixed;
+
+  inset: 0;
+
+  background:
+    rgba(15, 23, 42, .55);
+
+  display: flex;
+
+  align-items: center;
+
+  justify-content: center;
+
+  padding: 20px;
+
+  z-index: 1000;
+
+`;
+
+
+// =====================================================
+// MODAL
+// =====================================================
+
+const Modal = styled.div`
+
+  width: 100%;
+
+  max-width: 760px;
+
+  max-height: 90vh;
+
+  overflow-y: auto;
+
+  background: white;
+
+  border-radius: 18px;
+
+  padding: 24px;
+
+  box-shadow:
+    0 25px 70px
+    rgba(15,23,42,.25);
+
+`;
+
+
+const ModalHeader = styled.div`
+
+  display: flex;
+
+  justify-content: space-between;
+
+  align-items: flex-start;
+
+  margin-bottom: 22px;
+
+`;
+
+
+const ModalTitle = styled.h2`
+
+  margin: 0;
+
+  color: #172554;
+
+  font-size: 21px;
+
+`;
+
+
+const ModalSubtitle = styled.div`
+
+  color: #64748b;
+
+  font-size: 12px;
+
+  margin-top: 5px;
+
+`;
+
+
+const CloseButton = styled.button`
+
+  width: 34px;
+
+  height: 34px;
+
+  border: none;
+
+  border-radius: 8px;
+
+  background: #f1f5f9;
+
+  color: #475569;
+
+  font-size: 22px;
+
+  cursor: pointer;
+
+`;
+
+
+// =====================================================
+// FORM
+// =====================================================
+
+const FormGrid = styled.div`
+
+  display: grid;
+
+  grid-template-columns:
+    repeat(2, 1fr);
+
+  gap: 16px;
+
+`;
+
+
+const Field = styled.div`
+
+  display: flex;
+
+  flex-direction: column;
+
+  gap: 7px;
+
+`;
+
+
+const Label = styled.label`
+
+  color: #334155;
+
+  font-size: 12px;
+
+  font-weight: 800;
+
+`;
+
+
+const Input = styled.input`
+
+  width: 100%;
+
+  box-sizing: border-box;
+
+  padding: 12px 13px;
+
+  border:
+    1px solid #cbd5e1;
+
+  border-radius: 9px;
+
+  font-size: 14px;
+
+  outline: none;
+
+  &:focus {
+
+    border-color: #2563eb;
+
+    box-shadow:
+      0 0 0 3px
+      rgba(37,99,235,.1);
+
+  }
+
+`;
+
+
+const Select = styled.select`
+
+  width: 100%;
+
+  box-sizing: border-box;
+
+  padding: 12px 13px;
+
+  border:
+    1px solid #cbd5e1;
+
+  border-radius: 9px;
+
+  font-size: 14px;
+
+  background: white;
+
+  outline: none;
+
+`;
+
+
+const Hint = styled.div`
+
+  color: #94a3b8;
+
+  font-size: 11px;
+
+`;
+
+
+const ModalActions = styled.div`
+
+  display: flex;
+
+  justify-content: flex-end;
+
+  gap: 10px;
+
+  margin-top: 22px;
+
+`;
+// =====================================================
+// SALARY EMPLOYEE CARD
+// =====================================================
+
+const SalaryEmployeeCard = styled.div`
+
+  display: flex;
+
+  align-items: center;
+
+  gap: 12px;
+
+  background: #f8fafc;
+
+  border:
+    1px solid #e2e8f0;
+
+  border-radius: 12px;
+
+  padding: 13px;
+
+  margin-bottom: 18px;
+
+`;
+
+
+const SalaryEmployeeName = styled.div`
+
+  font-weight: 800;
+
+  color: #172554;
+
+`;
+
+
+const SalaryEmployeePhone = styled.div`
+
+  font-size: 12px;
+
+  color: #64748b;
+
+  margin-top: 3px;
+
+`;
+
+
+const CurrentSalary = styled.div`
+
+  margin-left: auto;
+
+  text-align: right;
+
+`;
+
+
+// =====================================================
+// SALARY INFORMATION BOX
+// =====================================================
+
+const SalaryInfoBox = styled.div`
+
+  background: #eff6ff;
+
+  border:
+    1px solid #bfdbfe;
+
+  border-radius: 10px;
+
+  padding: 13px;
+
+  margin: 18px 0;
+
+  color: #1e3a8a;
+
+  font-size: 12px;
+
+`;
+
+
+const SalaryInfoTitle = styled.div`
+
+  font-weight: 800;
+
+  font-size: 13px;
+
+`;
+
+
+const SalaryInfoText = styled.div`
+
+  margin-top: 6px;
+
+  line-height: 1.6;
+
+`;
+
+
+// =====================================================
+// SALARY HISTORY MODAL
+// =====================================================
+
+const SalaryHistoryTitle = styled.h3`
+
+  margin: 18px 0 10px;
+
+  color: #172554;
+
+  font-size: 16px;
+
+`;
+
+
+const SalaryHistoryModal = styled.div`
+
+  border:
+    1px solid #e2e8f0;
+
+  border-radius: 10px;
+
+  overflow: hidden;
+
+`;
+
+
+const SalaryHistoryItem = styled.div`
+
+  padding: 13px 15px;
+
+  display: flex;
+
+  align-items: center;
+
+  justify-content: space-between;
+
+  border-bottom:
+    1px solid #f1f5f9;
+
+  &:last-child {
+
+    border-bottom: none;
+
+  }
+
+`;
+
+
+const HistoryDate = styled.div`
+
+  color: #64748b;
+
+  font-size: 11px;
+
+  margin-top: 4px;
+
+`;
+
+
+const UpdatedBy = styled.div`
+
+  background: #f1f5f9;
+
+  color: #475569;
+
+  padding: 5px 8px;
+
+  border-radius: 6px;
+
+  font-size: 10px;
+
+  font-weight: 700;
+
+`;
+
+
+// =====================================================
+// RESPONSIVE DESIGN
+// =====================================================
+
+const ResponsiveStyle = styled.div`
+
+  @media (max-width: 1100px) {
+
+    ${MetricsGrid} {
+
+      grid-template-columns:
+        repeat(2, 1fr);
+
+    }
+
+
+    ${EmployeeRow} {
+
+      grid-template-columns:
+        1fr;
+
+    }
+
+
+    ${EmployeeActions} {
+
+      justify-content: flex-start;
+
+    }
+
+  }
+
+
+  @media (max-width: 800px) {
+
+    ${Page} {
+
+      padding: 15px;
+
+    }
+
+
+    ${Header} {
+
+      flex-direction: column;
+
+      align-items: flex-start;
+
+    }
+
+
+    ${AddButton} {
+
+      width: 100%;
+
+    }
+
+
+    ${RoleTabs} {
+
+      grid-template-columns:
+        repeat(2, 1fr);
+
+    }
+
+
+    ${FormGrid} {
+
+      grid-template-columns:
+        1fr;
+
+    }
+
+
+    ${DetailsHeader} {
+
+      flex-direction: column;
+
+      align-items: flex-start;
+
+      gap: 12px;
+
+    }
+
+
+    ${HistoryTable} {
+
+      overflow-x: auto;
+
+    }
+
+
+    ${HistoryHeader},
+    ${HistoryRow} {
+
+      min-width: 650px;
+
+    }
+
+
+    ${ExpenseTable} {
+
+      overflow-x: auto;
+
+    }
+
+
+    ${ExpenseHeader},
+    ${ExpenseRow} {
+
+      min-width: 750px;
+
+    }
+
+  }
+
+
+  @media (max-width: 550px) {
+
+    ${MetricsGrid} {
+
+      grid-template-columns:
+        1fr;
+
+    }
+
+
+    ${RoleTabs} {
+
+      grid-template-columns:
+        1fr;
+
+    }
+
+
+    ${EmployeeActions} {
+
+      width: 100%;
+
+    }
+
+
+    ${EmployeeActions} button {
+
+      flex: 1;
+
+    }
+
+
+    ${SalaryEmployeeCard} {
+
+      flex-wrap: wrap;
+
+    }
+
+
+    ${CurrentSalary} {
+
+      width: 100%;
+
+      margin-left: 0;
+
+      text-align: left;
+
+    }
+
+
+    ${BottomActions} {
+
+      flex-direction: column;
+
+    }
+
+
+    ${BottomActions} button {
+
+      width: 100%;
+
+    }
+
+  }
+
+`;
+
+
+// =====================================================
+// EXPORT
+// =====================================================
 
 export default EmployeePage;

@@ -14,10 +14,13 @@ import api from "../utils/api";
 import LorryImage from "../assets/images/TN34K3749.jpeg";
 
 
+// =====================================================
+// LORRY MANAGER PAGE
+// =====================================================
+
 const LorryManagerPage = () => {
 
   const navigate = useNavigate();
-
 
   const userName =
     localStorage.getItem("userName");
@@ -27,6 +30,9 @@ const LorryManagerPage = () => {
     useState(null);
 
   const [loading, setLoading] =
+    useState(false);
+
+  const [menuOpen, setMenuOpen] =
     useState(false);
 
 
@@ -97,6 +103,7 @@ const LorryManagerPage = () => {
             logout();
 
             return;
+
           }
 
 
@@ -107,6 +114,7 @@ const LorryManagerPage = () => {
             setLorry(null);
 
             return;
+
           }
 
 
@@ -115,6 +123,7 @@ const LorryManagerPage = () => {
             error.response?.data?.error ||
             "Failed to fetch assigned lorry."
           );
+
 
         } finally {
 
@@ -128,6 +137,7 @@ const LorryManagerPage = () => {
     fetchAssignedLorry();
 
 
+    // logout intentionally omitted
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, []);
 
@@ -139,12 +149,17 @@ const LorryManagerPage = () => {
   const openFuel = () => {
 
     if (!lorry) {
+
       return;
+
     }
+
 
     navigate(
       `/fuel/${lorry.id}`
     );
+
+    setMenuOpen(false);
 
   };
 
@@ -156,12 +171,30 @@ const LorryManagerPage = () => {
   const openPointDetails = () => {
 
     if (!lorry) {
+
       return;
+
     }
+
 
     navigate(
       `/point-details/${lorry.id}`
     );
+
+    setMenuOpen(false);
+
+  };
+
+
+  // =====================================================
+  // GO HOME
+  // =====================================================
+
+  const goHome = () => {
+
+    setMenuOpen(false);
+
+    navigate("/home");
 
   };
 
@@ -172,192 +205,815 @@ const LorryManagerPage = () => {
 
   return (
 
-    <Container>
+    <Page>
+      <ResponsiveStyleMount/>
 
-      <Header>
 
-        <CompanyName>
-          Sri Murugan Rig Service
-        </CompanyName>
+      {/* =================================================
+          TOP BAR
+      ================================================= */}
 
+      <TopBar>
 
-        <UserSection>
 
-          <UserName>
-            {userName ||
-              "Lorry Manager"}
-          </UserName>
+        {/* MENU BUTTON */}
 
+        <MenuButton
+          onClick={() =>
+            setMenuOpen(
+              (previous) =>
+                !previous
+            )
+          }
+        >
 
-          <UserRole>
-            LORRY MANAGER
-          </UserRole>
+          <MenuLine />
+          <MenuLine />
+          <MenuLine />
 
+        </MenuButton>
 
-          <LogoutButton
-            onClick={logout}
-          >
-            Logout
-          </LogoutButton>
 
-        </UserSection>
+        {/* BRAND */}
 
-      </Header>
+        <BrandArea>
 
+          <BrandLogo>
+            SM
+          </BrandLogo>
 
-      <PageTitle>
-        My Assigned Lorry
-      </PageTitle>
 
+          <BrandText>
 
-      {loading ? (
+            <CompanyName>
+              Sri Murugan Rig Service
+            </CompanyName>
 
-        <LoadingText>
-          Loading assigned lorry...
-        </LoadingText>
 
-      ) : !lorry ? (
+            <CompanySubtitle>
+              Drilling • Borewell • Rig Operations
+            </CompanySubtitle>
 
-        <NoLorry>
+          </BrandText>
 
-          No lorry has been assigned
-          to you yet.
+        </BrandArea>
 
-          <SmallText>
-            Please contact the owner
-            to assign a lorry.
-          </SmallText>
 
-        </NoLorry>
+        {/* USER */}
 
-      ) : (
+        <UserArea>
 
-        <LorryCard>
+          <UserAvatar>
 
-          <ImageContainer>
+            {
+              (
+                userName ||
+                "M"
+              )
+                .charAt(0)
+                .toUpperCase()
+            }
 
-            <img
-              src={LorryImage}
-              alt="Lorry"
-            />
+          </UserAvatar>
 
-          </ImageContainer>
 
+          <UserInfo>
 
-          <Details>
+            <UserName>
+              {
+                userName ||
+                "Lorry Manager"
+              }
+            </UserName>
 
-            <DetailRow>
 
-              <strong>
-                Registration:
-              </strong>
+            <UserRole>
+              LORRY MANAGER
+            </UserRole>
 
-              <span>
-                {lorry.registration_number}
-              </span>
+          </UserInfo>
 
-            </DetailRow>
+        </UserArea>
 
+      </TopBar>
 
-            <DetailRow>
 
-              <strong>
-                Owner:
-              </strong>
+      {/* =================================================
+          SIDE MENU
+      ================================================= */}
 
-              <span>
-                {lorry.owner_name}
-              </span>
+      {menuOpen && (
 
-            </DetailRow>
+        <>
 
+          <MenuBackdrop
+            onClick={() =>
+              setMenuOpen(false)
+            }
+          />
 
-            <DetailRow>
 
-              <strong>
-                Owner Phone:
-              </strong>
+          <SideMenu>
 
-              <span>
-                {lorry.owner_phone}
-              </span>
 
-            </DetailRow>
+            <SideMenuHeader>
 
+              <SideMenuBrand>
+                Sri Murugan Rig Service
+              </SideMenuBrand>
 
-            <DetailRow>
 
-              <strong>
-                Model:
-              </strong>
+              <CloseButton
+                onClick={() =>
+                  setMenuOpen(false)
+                }
+              >
+                ×
+              </CloseButton>
 
-              <span>
-                {lorry.model}
-              </span>
+            </SideMenuHeader>
 
-            </DetailRow>
 
+            <SideMenuSubtitle>
+              Lorry Manager Control Center
+            </SideMenuSubtitle>
 
-            <DetailRow>
 
-              <strong>
-                Year Built:
-              </strong>
+            <MenuDivider />
 
-              <span>
-                {lorry.year_built}
-              </span>
 
-            </DetailRow>
+            <MenuItem
+              onClick={() =>
+                setMenuOpen(false)
+              }
+            >
 
+              <MenuIcon>
+                🚛
+              </MenuIcon>
 
-            <DetailRow>
 
-              <strong>
-                Status:
-              </strong>
+              <MenuContent>
 
-              <span>
-                {lorry.status}
-              </span>
+                <MenuItemTitle>
+                  My Assigned Lorry
+                </MenuItemTitle>
 
-            </DetailRow>
 
-          </Details>
+                <MenuItemText>
+                  View assigned lorry
+                </MenuItemText>
 
+              </MenuContent>
 
-          {/* ============================================
-              AVAILABLE MODULES
-          ============================================ */}
+            </MenuItem>
 
-          <ModuleSection>
 
-            <ModuleTitle>
-              Lorry Details
-            </ModuleTitle>
-
-
-            <ModuleButton
+            <MenuItem
               onClick={openFuel}
+              disabled={!lorry}
             >
-              Fuel Details
-            </ModuleButton>
+
+              <MenuIcon>
+                ⛽
+              </MenuIcon>
 
 
-            <ModuleButton
+              <MenuContent>
+
+                <MenuItemTitle>
+                  Fuel Details
+                </MenuItemTitle>
+
+
+                <MenuItemText>
+                  Track fuel and expenses
+                </MenuItemText>
+
+              </MenuContent>
+
+            </MenuItem>
+
+
+            <MenuItem
               onClick={openPointDetails}
+              disabled={!lorry}
             >
-              Point Details
-            </ModuleButton>
 
-          </ModuleSection>
+              <MenuIcon>
+                📍
+              </MenuIcon>
 
-        </LorryCard>
+
+              <MenuContent>
+
+                <MenuItemTitle>
+                  Point Details
+                </MenuItemTitle>
+
+
+                <MenuItemText>
+                  Manage drilling points
+                </MenuItemText>
+
+              </MenuContent>
+
+            </MenuItem>
+
+
+            <MenuItem
+              onClick={goHome}
+            >
+
+              <MenuIcon>
+                ⌂
+              </MenuIcon>
+
+
+              <MenuContent>
+
+                <MenuItemTitle>
+                  Home
+                </MenuItemTitle>
+
+
+                <MenuItemText>
+                  Company overview
+                </MenuItemText>
+
+              </MenuContent>
+
+            </MenuItem>
+
+
+            <MenuDivider />
+
+
+            <LogoutItem
+              onClick={logout}
+            >
+
+              <MenuIcon>
+                ↪
+              </MenuIcon>
+
+
+              <MenuContent>
+
+                <MenuItemTitle>
+                  Logout
+                </MenuItemTitle>
+
+
+                <MenuItemText>
+                  Sign out of your account
+                </MenuItemText>
+
+              </MenuContent>
+
+            </LogoutItem>
+
+
+          </SideMenu>
+
+        </>
 
       )}
 
-    </Container>
+
+      {/* =================================================
+          MAIN CONTENT
+      ================================================= */}
+
+      <Main>
+
+
+        {/* =================================================
+            PAGE INTRO
+        ================================================= */}
+
+        <PageIntro>
+
+          <IntroEyebrow>
+            LORRY OPERATIONS
+          </IntroEyebrow>
+
+
+          <IntroTitle>
+            My Assigned Lorry
+          </IntroTitle>
+
+
+          <IntroDescription>
+
+            Manage the operational details
+            of your assigned drilling rig
+            from one place.
+
+          </IntroDescription>
+
+        </PageIntro>
+
+
+        {/* =================================================
+            LOADING
+        ================================================= */}
+
+        {loading ? (
+
+          <LoadingCard>
+
+            <Spinner />
+
+            <LoadingTitle>
+              Loading your lorry
+            </LoadingTitle>
+
+
+            <LoadingText>
+              Fetching assigned lorry details...
+            </LoadingText>
+
+          </LoadingCard>
+
+        ) : !lorry ? (
+
+          <NoLorryCard>
+
+            <NoLorryIcon>
+              🚛
+            </NoLorryIcon>
+
+
+            <NoLorryTitle>
+              No Lorry Assigned
+            </NoLorryTitle>
+
+
+            <NoLorryText>
+
+              A lorry has not been assigned
+              to your account yet.
+
+              <br />
+
+              Please contact the owner
+              or manager.
+
+            </NoLorryText>
+
+          </NoLorryCard>
+
+        ) : (
+
+          <>
+
+
+            {/* =================================================
+                LORRY HERO CARD
+            ================================================= */}
+
+            <LorryHero>
+
+
+              <LorryImageContainer>
+
+                <img
+                  src={LorryImage}
+                  alt={
+                    lorry.registration_number ||
+                    "Assigned lorry"
+                  }
+                />
+
+
+                <ImageOverlay />
+
+
+                <ActiveBadge>
+
+                  <ActiveDot />
+
+                  {
+                    lorry.status ||
+                    "ACTIVE"
+                  }
+
+                </ActiveBadge>
+
+
+                <RegistrationArea>
+
+                  <RegistrationLabel>
+                    ASSIGNED LORRY
+                  </RegistrationLabel>
+
+
+                  <RegistrationNumber>
+
+                    {
+                      lorry.registration_number ||
+                      "N/A"
+                    }
+
+                  </RegistrationNumber>
+
+                </RegistrationArea>
+
+              </LorryImageContainer>
+
+
+              <LorryInformation>
+
+
+                <InfoEyebrow>
+                  VEHICLE INFORMATION
+                </InfoEyebrow>
+
+
+                <InfoTitle>
+
+                  {
+                    lorry.model ||
+                    "Drilling Rig"
+                  }
+
+                </InfoTitle>
+
+
+                <InfoDescription>
+
+                  Your assigned drilling rig
+                  and operational vehicle.
+
+                </InfoDescription>
+
+
+                <DetailsGrid>
+
+
+                  <DetailCard>
+
+                    <DetailIcon>
+                      👤
+                    </DetailIcon>
+
+
+                    <DetailContent>
+
+                      <DetailLabel>
+                        OWNER
+                      </DetailLabel>
+
+
+                      <DetailValue>
+
+                        {
+                          lorry.owner_name ||
+                          "Not Available"
+                        }
+
+                      </DetailValue>
+
+                    </DetailContent>
+
+                  </DetailCard>
+
+
+                  <DetailCard>
+
+                    <DetailIcon>
+                      ☎
+                    </DetailIcon>
+
+
+                    <DetailContent>
+
+                      <DetailLabel>
+                        OWNER PHONE
+                      </DetailLabel>
+
+
+                      <DetailValue>
+
+                        {
+                          lorry.owner_phone ||
+                          "Not Available"
+                        }
+
+                      </DetailValue>
+
+                    </DetailContent>
+
+                  </DetailCard>
+
+
+                  <DetailCard>
+
+                    <DetailIcon>
+                      🚛
+                    </DetailIcon>
+
+
+                    <DetailContent>
+
+                      <DetailLabel>
+                        MODEL
+                      </DetailLabel>
+
+
+                      <DetailValue>
+
+                        {
+                          lorry.model ||
+                          "Not Available"
+                        }
+
+                      </DetailValue>
+
+                    </DetailContent>
+
+                  </DetailCard>
+
+
+                  <DetailCard>
+
+                    <DetailIcon>
+                      📅
+                    </DetailIcon>
+
+
+                    <DetailContent>
+
+                      <DetailLabel>
+                        YEAR BUILT
+                      </DetailLabel>
+
+
+                      <DetailValue>
+
+                        {
+                          lorry.year_built ||
+                          "Not Available"
+                        }
+
+                      </DetailValue>
+
+                    </DetailContent>
+
+                  </DetailCard>
+
+
+                </DetailsGrid>
+
+
+              </LorryInformation>
+
+            </LorryHero>
+
+
+            {/* =================================================
+                OPERATIONS
+            ================================================= */}
+
+            <OperationsSection>
+
+
+              <OperationsHeader>
+
+                <OperationsHeaderContent>
+
+                  <OperationsEyebrow>
+                    OPERATIONS
+                  </OperationsEyebrow>
+
+
+                  <OperationsTitle>
+                    Lorry Details
+                  </OperationsTitle>
+
+
+                  <OperationsDescription>
+
+                    Access the information you
+                    need to manage your daily
+                    rig operations.
+
+                  </OperationsDescription>
+
+                </OperationsHeaderContent>
+
+
+                <OperationsStatus>
+
+                  <StatusDot />
+
+                  READY
+
+                </OperationsStatus>
+
+              </OperationsHeader>
+
+
+              <ModuleGrid>
+
+
+                {/* ==========================================
+                    FUEL
+                ========================================== */}
+
+                <ModuleCard
+                  onClick={openFuel}
+                >
+
+                  <ModuleIcon fuel>
+                    ⛽
+                  </ModuleIcon>
+
+
+                  <ModuleContent>
+
+                    <ModuleEyebrow>
+                      OPERATIONS
+                    </ModuleEyebrow>
+
+
+                    <ModuleTitle>
+                      Fuel Details
+                    </ModuleTitle>
+
+
+                    <ModuleDescription>
+
+                      Record and monitor fuel
+                      usage, expenses and
+                      refuelling history for
+                      this lorry.
+
+                    </ModuleDescription>
+
+
+                    <ModuleAction>
+
+                      Open Fuel Details
+
+                      <Arrow>
+                        →
+                      </Arrow>
+
+                    </ModuleAction>
+
+                  </ModuleContent>
+
+                </ModuleCard>
+
+
+                {/* ==========================================
+                    POINT DETAILS
+                ========================================== */}
+
+                <ModuleCard
+                  onClick={openPointDetails}
+                >
+
+                  <ModuleIcon point>
+                    📍
+                  </ModuleIcon>
+
+
+                  <ModuleContent>
+
+                    <ModuleEyebrow>
+                      FIELD OPERATIONS
+                    </ModuleEyebrow>
+
+
+                    <ModuleTitle>
+                      Point Details
+                    </ModuleTitle>
+
+
+                    <ModuleDescription>
+
+                      Manage drilling points,
+                      locations and operational
+                      information for your
+                      assigned rig.
+
+                    </ModuleDescription>
+
+
+                    <ModuleAction>
+
+                      Open Point Details
+
+                      <Arrow>
+                        →
+                      </Arrow>
+
+                    </ModuleAction>
+
+                  </ModuleContent>
+
+                </ModuleCard>
+
+
+              </ModuleGrid>
+
+            </OperationsSection>
+
+
+            {/* =================================================
+                EXPERIENCE BANNER
+            ================================================= */}
+
+            <ExperienceBanner>
+
+              <ExperienceContent>
+
+                <ExperienceEyebrow>
+                  SRI MURUGAN RIG SERVICE
+                </ExperienceEyebrow>
+
+
+                <ExperienceTitle>
+
+                  25 Years of Experience.
+                  <br />
+
+                  Built on Trust.
+                  Driven by Service.
+
+                </ExperienceTitle>
+
+
+                <ExperienceText>
+
+                  Since 2001, our drilling
+                  operations have been built
+                  around dependable service,
+                  field experience and
+                  long-term customer trust.
+
+                </ExperienceText>
+
+              </ExperienceContent>
+
+
+              <ExperienceSince>
+
+                <SinceNumber>
+                  25+
+                </SinceNumber>
+
+
+                <SinceLabel>
+                  YEARS
+                  <br />
+                  EXPERIENCE
+                </SinceLabel>
+
+              </ExperienceSince>
+
+            </ExperienceBanner>
+
+
+          </>
+
+        )}
+
+      </Main>
+
+
+      {/* =================================================
+          FOOTER
+      ================================================= */}
+
+      <Footer>
+
+        <FooterCompany>
+          Sri Murugan Rig Service
+        </FooterCompany>
+
+
+        <FooterQuote>
+
+          “Since 2001 — Reliability at Every Depth.”
+
+        </FooterQuote>
+
+
+        <FooterSince>
+          Since 2001
+        </FooterSince>
+
+      </Footer>
+
+
+    </Page>
+
   );
+
 };
 
 
@@ -365,260 +1021,2106 @@ export default LorryManagerPage;
 
 
 // =====================================================
-// STYLES
+// PAGE
 // =====================================================
 
-const Container = styled.div`
+const Page = styled.div`
+
   min-height: 100vh;
 
-  padding: 30px;
+  background:
+    radial-gradient(
+      circle at 10% 10%,
+      rgba(22,101,52,0.07),
+      transparent 25%
+    ),
 
-  background-color: #f9f9f9;
+    radial-gradient(
+      circle at 90% 30%,
+      rgba(30,64,175,0.05),
+      transparent 25%
+    ),
+
+    linear-gradient(
+      135deg,
+      #f8faf9 0%,
+      #eef4f0 100%
+    );
+
+  color: #172554;
+
 `;
 
 
-const Header = styled.div`
+// =====================================================
+// TOP BAR
+// =====================================================
+
+const TopBar = styled.header`
+
+  position: relative;
+
+  z-index: 30;
+
+  height: 92px;
+
   display: flex;
 
   align-items: center;
 
   justify-content: center;
 
-  position: relative;
+  padding: 0 42px;
 
-  width: 100%;
+  background:
+    rgba(255,255,255,0.96);
 
-  border-bottom: 1px solid #ddd;
+  border-bottom:
+    1px solid #dce7e1;
 
-  padding-bottom: 20px;
+  backdrop-filter:
+    blur(15px);
+
 `;
 
 
-const CompanyName = styled.h1`
-  margin: 0;
+// =====================================================
+// MENU BUTTON
+// =====================================================
 
-  font-size: 3rem;
+const MenuButton = styled.button`
 
-  color: #333;
-
-  text-align: center;
-
-  @media (max-width: 768px) {
-    font-size: 2rem;
-  }
-`;
-
-
-const UserSection = styled.div`
   position: absolute;
 
-  right: 0;
+  left: 32px;
 
-  top: 0;
+  top: 50%;
 
-  text-align: right;
-`;
+  transform:
+    translateY(-50%);
 
+  width: 54px;
 
-const UserName = styled.div`
-  font-size: 1.4rem;
+  height: 54px;
 
-  font-weight: bold;
+  display: flex;
 
-  color: #333;
-`;
+  flex-direction: column;
 
+  align-items: center;
 
-const UserRole = styled.div`
-  font-size: 0.9rem;
+  justify-content: center;
 
-  color: #666;
+  gap: 6px;
 
-  margin-top: 5px;
-`;
+  border:
+    1px solid #dce7e1;
 
+  border-radius: 14px;
 
-const LogoutButton = styled.button`
-  margin-top: 10px;
-
-  padding: 10px 20px;
-
-  background-color: #f44336;
-
-  color: white;
-
-  border: none;
-
-  border-radius: 5px;
+  background: #ffffff;
 
   cursor: pointer;
 
+  transition:
+    all 0.2s ease;
+
+
   &:hover {
-    background-color: #d32f2f;
+
+    background: #ecfdf5;
+
+    border-color: #bbf7d0;
+
   }
+
 `;
 
 
-const PageTitle = styled.h2`
-  text-align: center;
+// =====================================================
+// MENU LINE
+// =====================================================
 
-  margin-top: 30px;
+const MenuLine = styled.span`
 
-  color: #333;
+  width: 25px;
+
+  height: 3px;
+
+  border-radius: 4px;
+
+  background: #166534;
+
 `;
 
 
-const LorryCard = styled.div`
+// =====================================================
+// BRAND
+// =====================================================
+
+const BrandArea = styled.div`
+
+  display: flex;
+
+  align-items: center;
+
+  gap: 15px;
+
+`;
+
+
+// =====================================================
+// BRAND LOGO
+// =====================================================
+
+const BrandLogo = styled.div`
+
+  width: 57px;
+
+  height: 57px;
+
+  display: flex;
+
+  align-items: center;
+
+  justify-content: center;
+
+  border-radius: 15px;
+
+  background: #14532d;
+
+  color: #ffffff;
+
+  font-size: 17px;
+
+  font-weight: 900;
+
+  letter-spacing: 1px;
+
+  box-shadow:
+    0 8px 22px
+    rgba(20,83,45,0.18);
+
+`;
+
+
+// =====================================================
+// BRAND TEXT
+// =====================================================
+
+const BrandText = styled.div`;
+
+`;
+
+
+// =====================================================
+// COMPANY NAME
+// =====================================================
+
+const CompanyName = styled.div`
+
+  color: #172554;
+
+  font-size: 21px;
+
+  font-weight: 900;
+
+`;
+
+
+// =====================================================
+// COMPANY SUBTITLE
+// =====================================================
+
+const CompanySubtitle = styled.div`
+
+  margin-top: 4px;
+
+  color: #64748b;
+
+  font-size: 11px;
+
+  font-weight: 700;
+
+`;
+
+
+// =====================================================
+// USER AREA
+// =====================================================
+
+const UserArea = styled.div`
+
+  position: absolute;
+
+  right: 34px;
+
+  top: 50%;
+
+  transform:
+    translateY(-50%);
+
+  display: flex;
+
+  align-items: center;
+
+  gap: 12px;
+
+`;
+
+
+// =====================================================
+// USER AVATAR
+// =====================================================
+
+const UserAvatar = styled.div`
+
+  width: 49px;
+
+  height: 49px;
+
+  display: flex;
+
+  align-items: center;
+
+  justify-content: center;
+
+  border-radius: 13px;
+
+  background: #ecfdf5;
+
+  color: #166534;
+
+  font-size: 17px;
+
+  font-weight: 900;
+
+`;
+
+
+// =====================================================
+// USER INFO
+// =====================================================
+
+const UserInfo = styled.div`;
+
+  text-align: left;
+
+`;
+
+
+// =====================================================
+// USER NAME
+// =====================================================
+
+const UserName = styled.div`
+
+  color: #172554;
+
+  font-size: 14px;
+
+  font-weight: 900;
+
+`;
+
+
+// =====================================================
+// USER ROLE
+// =====================================================
+
+const UserRole = styled.div`
+
+  margin-top: 3px;
+
+  color: #94a3b8;
+
+  font-size: 9px;
+
+  font-weight: 900;
+
+  letter-spacing: 1px;
+
+`;
+
+
+// =====================================================
+// MENU BACKDROP
+// =====================================================
+
+const MenuBackdrop = styled.div`
+
+  position: fixed;
+
+  inset: 0;
+
+  z-index: 80;
+
+  background:
+    rgba(15,23,42,0.42);
+
+  backdrop-filter:
+    blur(3px);
+
+`;
+
+
+// =====================================================
+// SIDE MENU
+// =====================================================
+
+const SideMenu = styled.aside`
+
+  position: fixed;
+
+  top: 0;
+
+  left: 0;
+
+  bottom: 0;
+
+  z-index: 90;
+
+  width: 390px;
+
+  padding: 32px 24px;
+
+  box-sizing: border-box;
+
+  background: #ffffff;
+
+  box-shadow:
+    18px 0 50px
+    rgba(15,23,42,0.16);
+
+  animation:
+    slideIn 0.22s ease;
+
+
+  @keyframes slideIn {
+
+    from {
+
+      transform:
+        translateX(-100%);
+
+    }
+
+    to {
+
+      transform:
+        translateX(0);
+
+    }
+
+  }
+
+`;
+
+
+// =====================================================
+// SIDE MENU HEADER
+// =====================================================
+
+const SideMenuHeader = styled.div`
+
+  display: flex;
+
+  align-items: center;
+
+  justify-content: space-between;
+
+`;
+
+
+// =====================================================
+// SIDE MENU BRAND
+// =====================================================
+
+const SideMenuBrand = styled.div`
+
+  color: #172554;
+
+  font-size: 21px;
+
+  font-weight: 900;
+
+`;
+
+
+// =====================================================
+// CLOSE BUTTON
+// =====================================================
+
+const CloseButton = styled.button`
+
+  width: 44px;
+
+  height: 44px;
+
+  border:
+    1px solid #dce7e1;
+
+  border-radius: 11px;
+
+  background: #f8faf9;
+
+  color: #64748b;
+
+  font-size: 27px;
+
+  cursor: pointer;
+
+`;
+
+
+// =====================================================
+// SIDE MENU SUBTITLE
+// =====================================================
+
+const SideMenuSubtitle = styled.div`
+
+  margin-top: 6px;
+
+  color: #94a3b8;
+
+  font-size: 11px;
+
+  font-weight: 700;
+
+`;
+
+
+// =====================================================
+// MENU DIVIDER
+// =====================================================
+
+const MenuDivider = styled.div`
+
+  height: 1px;
+
+  margin: 22px 0;
+
+  background: #eef2f7;
+
+`;
+
+
+// =====================================================
+// MENU ITEM
+// =====================================================
+
+const MenuItem = styled.button`
+
   width: 100%;
 
-  max-width: 500px;
+  display: flex;
 
-  margin: 40px auto;
+  align-items: center;
 
-  padding: 25px;
+  gap: 15px;
 
-  background-color: white;
+  padding: 15px;
+
+  margin-bottom: 7px;
+
+  border: none;
+
+  border-radius: 13px;
+
+  background: transparent;
+
+  text-align: left;
+
+  cursor: pointer;
+
+  transition:
+    background 0.2s ease;
+
+
+  &:hover {
+
+    background: #f0fdf4;
+
+  }
+
+
+  &:disabled {
+
+    opacity: 0.45;
+
+    cursor: not-allowed;
+
+  }
+
+`;
+
+
+// =====================================================
+// LOGOUT
+// =====================================================
+
+const LogoutItem = styled(MenuItem)`
+
+  &:hover {
+
+    background: #fef2f2;
+
+  }
+
+`;
+
+const StatusDot = styled.span`
+  width: 9px;
+  height: 9px;
+  flex-shrink: 0;
+  border-radius: 50%;
+  background: #22c55e;
+  box-shadow:
+    0 0 0 5px rgba(34, 197, 94, 0.12);
+`;
+
+
+// =====================================================
+// MENU ICON
+// =====================================================
+
+const MenuIcon = styled.div`
+
+  width: 48px;
+
+  height: 48px;
+
+  flex-shrink: 0;
+
+  display: flex;
+
+  align-items: center;
+
+  justify-content: center;
 
   border-radius: 12px;
 
-  box-shadow:
-    0 4px 15px
-    rgba(0, 0, 0, 0.1);
+  background: #f1f5f9;
 
-  box-sizing: border-box;
+  font-size: 20px;
+
 `;
 
 
-const ImageContainer = styled.div`
-  width: 100%;
+// =====================================================
+// MENU CONTENT
+// =====================================================
 
-  height: 280px;
+const MenuContent = styled.div`
+
+  min-width: 0;
+
+`;
+
+
+// =====================================================
+// MENU ITEM TITLE
+// =====================================================
+
+const MenuItemTitle = styled.div`
+
+  color: #172554;
+
+  font-size: 14px;
+
+  font-weight: 900;
+
+`;
+
+
+// =====================================================
+// MENU ITEM TEXT
+// =====================================================
+
+const MenuItemText = styled.div`
+
+  margin-top: 3px;
+
+  color: #94a3b8;
+
+  font-size: 10px;
+
+  font-weight: 600;
+
+`;
+
+
+// =====================================================
+// MAIN
+// =====================================================
+
+const Main = styled.main`
+
+  max-width: 1550px;
+
+  margin: 0 auto;
+
+  padding:
+    55px 42px 70px;
+
+`;
+
+
+// =====================================================
+// PAGE INTRO
+// =====================================================
+
+const PageIntro = styled.div`
+
+  margin-bottom: 35px;
+
+`;
+
+
+// =====================================================
+// INTRO EYEBROW
+// =====================================================
+
+const IntroEyebrow = styled.div`
+
+  color: #3f6f5a;
+
+  font-size: 11px;
+
+  font-weight: 900;
+
+  letter-spacing: 2px;
+
+`;
+
+
+// =====================================================
+// INTRO TITLE
+// =====================================================
+
+const IntroTitle = styled.h1`
+
+  margin: 8px 0 0;
+
+  color: #172554;
+
+  font-size:
+    clamp(42px, 5vw, 58px);
+
+  font-weight: 900;
+
+  letter-spacing: -1.5px;
+
+`;
+
+
+// =====================================================
+// INTRO DESCRIPTION
+// =====================================================
+
+const IntroDescription = styled.p`
+
+  max-width: 700px;
+
+  margin: 13px 0 0;
+
+  color: #64748b;
+
+  font-size: 16px;
+
+  line-height: 1.7;
+
+`;
+
+
+// =====================================================
+// LORRY HERO
+// =====================================================
+
+const LorryHero = styled.section`
+
+  display: grid;
+
+  grid-template-columns:
+    1.1fr 1fr;
 
   overflow: hidden;
 
-  border-radius: 10px;
+  border:
+    1px solid #dce7e1;
 
-  margin-bottom: 25px;
+  border-radius: 27px;
+
+  background: #ffffff;
+
+  box-shadow:
+    0 18px 45px
+    rgba(15,23,42,0.07);
+
+`;
+
+
+// =====================================================
+// LORRY IMAGE
+// =====================================================
+
+const LorryImageContainer = styled.div`
+
+  position: relative;
+
+  min-height: 510px;
+
+  overflow: hidden;
+
+  background: #173b2a;
 
   img {
+
     width: 100%;
 
     height: 100%;
 
+    min-height: 510px;
+
     object-fit: cover;
+
+  }
+
+`;
+
+
+// =====================================================
+// IMAGE OVERLAY
+// =====================================================
+
+const ImageOverlay = styled.div`
+
+  position: absolute;
+
+  inset: 0;
+
+  background:
+    linear-gradient(
+      to top,
+      rgba(8,25,17,0.92),
+      rgba(8,25,17,0.05) 65%
+    );
+
+`;
+
+
+// =====================================================
+// ACTIVE BADGE
+// =====================================================
+
+const ActiveBadge = styled.div`
+
+  position: absolute;
+
+  top: 22px;
+
+  right: 22px;
+
+  display: flex;
+
+  align-items: center;
+
+  gap: 8px;
+
+  padding:
+    10px 14px;
+
+  border-radius: 10px;
+
+  background:
+    rgba(255,255,255,0.95);
+
+  color: #166534;
+
+  font-size: 10px;
+
+  font-weight: 900;
+
+  letter-spacing: 1px;
+
+`;
+
+
+// =====================================================
+// ACTIVE DOT
+// =====================================================
+
+const ActiveDot = styled.span`
+
+  width: 9px;
+
+  height: 9px;
+
+  border-radius: 50%;
+
+  background: #22c55e;
+
+  box-shadow:
+    0 0 0 5px
+    rgba(34,197,94,0.12);
+
+`;
+
+
+// =====================================================
+// REGISTRATION AREA
+// =====================================================
+
+const RegistrationArea = styled.div`
+
+  position: absolute;
+
+  left: 32px;
+
+  right: 25px;
+
+  bottom: 30px;
+
+`;
+
+
+// =====================================================
+// REGISTRATION LABEL
+// =====================================================
+
+const RegistrationLabel = styled.div`
+
+  color: #bbf7d0;
+
+  font-size: 10px;
+
+  font-weight: 900;
+
+  letter-spacing: 2px;
+
+`;
+
+
+// =====================================================
+// REGISTRATION NUMBER
+// =====================================================
+
+const RegistrationNumber = styled.div`
+
+  margin-top: 5px;
+
+  color: #ffffff;
+
+  font-size:
+    clamp(42px, 5vw, 65px);
+
+  line-height: 1;
+
+  font-weight: 900;
+
+  letter-spacing: 2px;
+
+  text-shadow:
+    0 4px 15px
+    rgba(0,0,0,0.35);
+
+`;
+
+
+// =====================================================
+// LORRY INFORMATION
+// =====================================================
+
+const LorryInformation = styled.div`
+
+  padding: 48px;
+
+`;
+
+
+// =====================================================
+// INFO EYEBROW
+// =====================================================
+
+const InfoEyebrow = styled.div`
+
+  color: #3f6f5a;
+
+  font-size: 10px;
+
+  font-weight: 900;
+
+  letter-spacing: 2px;
+
+`;
+
+
+// =====================================================
+// INFO TITLE
+// =====================================================
+
+const InfoTitle = styled.h2`
+
+  margin: 8px 0 0;
+
+  color: #172554;
+
+  font-size: 38px;
+
+  font-weight: 900;
+
+`;
+
+
+// =====================================================
+// INFO DESCRIPTION
+// =====================================================
+
+const InfoDescription = styled.p`
+
+  margin: 10px 0 0;
+
+  color: #64748b;
+
+  font-size: 14px;
+
+  line-height: 1.6;
+
+`;
+
+
+// =====================================================
+// DETAILS GRID
+// =====================================================
+
+const DetailsGrid = styled.div`
+  display: grid;
+
+  grid-template-columns:
+    repeat(2, minmax(0, 1fr));
+
+  gap: 20px;
+
+  margin-top: 35px;
+`;
+
+
+// =====================================================
+// DETAIL CARD
+// =====================================================
+
+const DetailCard = styled.div`
+  display: flex;
+
+  align-items: center;
+
+  gap: 18px;
+
+  min-height: 125px;
+
+  padding: 22px;
+
+  box-sizing: border-box;
+
+  border: 1px solid #dce7e1;
+
+  border-radius: 17px;
+
+  background: #f8faf9;
+
+  transition: all 0.2s ease;
+
+  &:hover {
+    background: #f0fdf4;
+
+    border-color: #bbf7d0;
+
+    transform: translateY(-2px);
   }
 `;
 
 
-const Details = styled.div`
-  margin-top: 10px;
+// =====================================================
+// DETAIL ICON
+// =====================================================
+
+const DetailIcon = styled.div`
+  width: 58px;
+
+  height: 58px;
+
+  flex-shrink: 0;
+
+  display: flex;
+
+  align-items: center;
+
+  justify-content: center;
+
+  border-radius: 14px;
+
+  background: #ecfdf5;
+
+  color: #166534;
+
+  font-size: 25px;
 `;
 
 
-const DetailRow = styled.div`
+// =====================================================
+// DETAIL CONTENT
+// =====================================================
+
+const DetailContent = styled.div`
+
+  min-width: 0;
+
+`;
+
+
+// =====================================================
+// DETAIL LABEL
+// =====================================================
+
+const DetailLabel = styled.div`
+  color: #64748b;
+
+  font-size: 11px;
+
+  font-weight: 900;
+
+  letter-spacing: 1.3px;
+
+  text-transform: uppercase;
+`;
+
+
+// =====================================================
+// DETAIL VALUE
+// =====================================================
+
+const DetailValue = styled.div`
+  margin-top: 7px;
+
+  color: #172554;
+
+  font-size: 19px;
+
+  font-weight: 900;
+
+  line-height: 1.3;
+
+  word-break: break-word;
+`;
+
+// =====================================================
+// OPERATIONS
+// =====================================================
+
+const OperationsSection = styled.section`
+
+  margin-top: 60px;
+
+`;
+
+
+// =====================================================
+// OPERATIONS HEADER
+// =====================================================
+
+const OperationsHeader = styled.div`
+
   display: flex;
+
+  align-items: flex-end;
 
   justify-content: space-between;
 
   gap: 20px;
 
-  padding: 12px 0;
+  margin-bottom: 25px;
 
-  border-bottom: 1px solid #eee;
-
-  color: #333;
-
-  span {
-    text-align: right;
-  }
 `;
 
 
-const ModuleSection = styled.div`
-  margin-top: 30px;
+// =====================================================
+// HEADER CONTENT
+// =====================================================
 
-  padding-top: 20px;
+const OperationsHeaderContent = styled.div`;
 
-  border-top: 1px solid #ddd;
 `;
 
 
-const ModuleTitle = styled.h3`
-  text-align: center;
+// =====================================================
+// OPERATIONS EYEBROW
+// =====================================================
 
-  margin-bottom: 20px;
+const OperationsEyebrow = styled.div`
 
-  color: #333;
+  color: #3f6f5a;
+
+  font-size: 10px;
+
+  font-weight: 900;
+
+  letter-spacing: 2px;
+
 `;
 
 
-const ModuleButton = styled.button`
-  display: block;
+// =====================================================
+// OPERATIONS TITLE
+// =====================================================
 
-  width: 100%;
+const OperationsTitle = styled.h2`
 
-  padding: 14px;
+  margin: 7px 0 0;
 
-  margin-top: 12px;
+  color: #172554;
 
-  background-color: #2196f3;
+  font-size: 35px;
 
-  color: white;
+  font-weight: 900;
 
-  border: none;
+`;
 
-  border-radius: 6px;
+
+// =====================================================
+// OPERATIONS DESCRIPTION
+// =====================================================
+
+const OperationsDescription = styled.p`
+
+  margin: 8px 0 0;
+
+  color: #64748b;
+
+  font-size: 14px;
+
+`;
+
+
+// =====================================================
+// OPERATIONS STATUS
+// =====================================================
+
+const OperationsStatus = styled.div`
+
+  display: flex;
+
+  align-items: center;
+
+  gap: 9px;
+
+  padding:
+    11px 15px;
+
+  border:
+    1px solid #bbf7d0;
+
+  border-radius: 10px;
+
+  background: #f0fdf4;
+
+  color: #166534;
+
+  font-size: 9px;
+
+  font-weight: 900;
+
+  letter-spacing: 1px;
+
+`;
+
+
+// =====================================================
+// MODULE GRID
+// =====================================================
+
+const ModuleGrid = styled.div`
+
+  display: grid;
+
+  grid-template-columns:
+    repeat(2, minmax(0, 1fr));
+
+  gap: 23px;
+
+`;
+
+
+// =====================================================
+// MODULE CARD
+// =====================================================
+
+const ModuleCard = styled.button`
+
+  min-height: 320px;
+
+  display: flex;
+
+  align-items: flex-start;
+
+  gap: 23px;
+
+  padding: 32px;
+
+  box-sizing: border-box;
+
+  border:
+    1px solid #dce7e1;
+
+  border-radius: 22px;
+
+  background: #ffffff;
+
+  text-align: left;
 
   cursor: pointer;
 
-  font-size: 16px;
+  box-shadow:
+    0 10px 30px
+    rgba(15,23,42,0.05);
+
+  transition:
+    all 0.22s ease;
+
 
   &:hover {
-    background-color: #1976d2;
+
+    transform:
+      translateY(-6px);
+
+    border-color:
+      #bbf7d0;
+
+    box-shadow:
+      0 20px 40px
+      rgba(15,23,42,0.09);
+
   }
+
 `;
 
 
-const LoadingText = styled.div`
-  text-align: center;
+// =====================================================
+// MODULE ICON
+// =====================================================
 
-  font-size: 20px;
+const ModuleIcon = styled.div`
 
-  color: #555;
+  width: 72px;
 
-  margin-top: 60px;
+  height: 72px;
+
+  flex-shrink: 0;
+
+  display: flex;
+
+  align-items: center;
+
+  justify-content: center;
+
+  border-radius: 18px;
+
+  background:
+    ${({ fuel }) =>
+      fuel
+        ? "#fff7ed"
+        : "#eff6ff"};
+
+  color:
+    ${({ fuel }) =>
+      fuel
+        ? "#c2410c"
+        : "#1d4ed8"};
+
+  font-size: 31px;
+
 `;
 
 
-const NoLorry = styled.div`
-  width: 90%;
+// =====================================================
+// MODULE CONTENT
+// =====================================================
 
-  max-width: 500px;
+const ModuleContent = styled.div`
 
-  margin: 60px auto;
+  flex: 1;
 
-  padding: 40px 25px;
+`;
 
-  background-color: white;
 
-  border-radius: 12px;
+// =====================================================
+// MODULE EYEBROW
+// =====================================================
 
-  text-align: center;
+const ModuleEyebrow = styled.div`
 
-  font-size: 20px;
+  color: #94a3b8;
 
-  color: #555;
+  font-size: 9px;
+
+  font-weight: 900;
+
+  letter-spacing: 1.5px;
+
+`;
+
+
+// =====================================================
+// MODULE TITLE
+// =====================================================
+
+const ModuleTitle = styled.div`
+
+  margin-top: 7px;
+
+  color: #172554;
+
+  font-size: 27px;
+
+  font-weight: 900;
+
+`;
+
+
+// =====================================================
+// MODULE DESCRIPTION
+// =====================================================
+
+const ModuleDescription = styled.div`
+
+  max-width: 470px;
+
+  margin-top: 12px;
+
+  color: #64748b;
+
+  font-size: 14px;
+
+  line-height: 1.7;
+
+`;
+
+
+// =====================================================
+// MODULE ACTION
+// =====================================================
+
+const ModuleAction = styled.div`
+
+  display: flex;
+
+  align-items: center;
+
+  justify-content: space-between;
+
+  margin-top: 30px;
+
+  color: #166534;
+
+  font-size: 12px;
+
+  font-weight: 900;
+
+`;
+
+
+// =====================================================
+// ARROW
+// =====================================================
+
+const Arrow = styled.span`
+
+  font-size: 23px;
+
+  transition:
+    transform 0.2s ease;
+
+  ${ModuleCard}:hover & {
+
+    transform:
+      translateX(5px);
+
+  }
+
+`;
+
+
+// =====================================================
+// EXPERIENCE BANNER
+// =====================================================
+
+const ExperienceBanner = styled.section`
+
+  display: flex;
+
+  align-items: center;
+
+  justify-content: space-between;
+
+  gap: 35px;
+
+  margin-top: 55px;
+
+  padding: 42px;
+
+  border-radius: 23px;
+
+  background:
+    linear-gradient(
+      120deg,
+      #163b29,
+      #1f5139
+    );
 
   box-shadow:
-    0 4px 12px
-    rgba(0, 0, 0, 0.08);
+    0 18px 40px
+    rgba(15,23,42,0.1);
+
 `;
 
 
-const SmallText = styled.div`
-  margin-top: 15px;
+// =====================================================
+// EXPERIENCE CONTENT
+// =====================================================
 
-  font-size: 15px;
+const ExperienceContent = styled.div`
 
-  color: #888;
+  max-width: 800px;
+
 `;
+
+
+// =====================================================
+// EXPERIENCE EYEBROW
+// =====================================================
+
+const ExperienceEyebrow = styled.div`
+
+  color: #a7f3d0;
+
+  font-size: 10px;
+
+  font-weight: 900;
+
+  letter-spacing: 2px;
+
+`;
+
+
+// =====================================================
+// EXPERIENCE TITLE
+// =====================================================
+
+const ExperienceTitle = styled.h2`
+
+  margin: 10px 0 0;
+
+  color: #ffffff;
+
+  font-size: 32px;
+
+  line-height: 1.25;
+
+  font-weight: 900;
+
+`;
+
+
+// =====================================================
+// EXPERIENCE TEXT
+// =====================================================
+
+const ExperienceText = styled.p`
+
+  margin: 14px 0 0;
+
+  color: #dbece2;
+
+  font-size: 14px;
+
+  line-height: 1.7;
+
+`;
+
+
+// =====================================================
+// EXPERIENCE SINCE
+// =====================================================
+
+const ExperienceSince = styled.div`
+
+  display: flex;
+
+  align-items: center;
+
+  gap: 13px;
+
+  padding-left: 28px;
+
+  border-left:
+    3px solid #86efac;
+
+`;
+
+
+// =====================================================
+// SINCE NUMBER
+// =====================================================
+
+const SinceNumber = styled.div`
+
+  color: #ffffff;
+
+  font-size: 57px;
+
+  line-height: 1;
+
+  font-weight: 900;
+
+`;
+
+
+// =====================================================
+// SINCE LABEL
+// =====================================================
+
+const SinceLabel = styled.div`
+
+  color: #a7f3d0;
+
+  font-size: 10px;
+
+  line-height: 1.4;
+
+  font-weight: 900;
+
+  letter-spacing: 1px;
+
+`;
+
+
+// =====================================================
+// LOADING CARD
+// =====================================================
+
+const LoadingCard = styled.div`
+
+  min-height: 500px;
+
+  display: flex;
+
+  flex-direction: column;
+
+  align-items: center;
+
+  justify-content: center;
+
+  border:
+    1px solid #dce7e1;
+
+  border-radius: 25px;
+
+  background: #ffffff;
+
+`;
+
+
+// =====================================================
+// SPINNER
+// =====================================================
+
+const Spinner = styled.div`
+
+  width: 55px;
+
+  height: 55px;
+
+  border:
+    5px solid #dcfce7;
+
+  border-top-color:
+    #166534;
+
+  border-radius: 50%;
+
+  animation:
+    spin 0.8s linear infinite;
+
+
+  @keyframes spin {
+
+    to {
+
+      transform:
+        rotate(360deg);
+
+    }
+
+  }
+
+`;
+
+
+// =====================================================
+// LOADING TITLE
+// =====================================================
+
+const LoadingTitle = styled.div`
+
+  margin-top: 23px;
+
+  color: #172554;
+
+  font-size: 23px;
+
+  font-weight: 900;
+
+`;
+
+
+// =====================================================
+// LOADING TEXT
+// =====================================================
+
+const LoadingText = styled.div`
+
+  margin-top: 8px;
+
+  color: #94a3b8;
+
+  font-size: 13px;
+
+`;
+
+
+// =====================================================
+// NO LORRY CARD
+// =====================================================
+
+const NoLorryCard = styled.div`
+
+  min-height: 500px;
+
+  display: flex;
+
+  flex-direction: column;
+
+  align-items: center;
+
+  justify-content: center;
+
+  padding: 40px;
+
+  border:
+    1px dashed #cbd5e1;
+
+  border-radius: 25px;
+
+  background:
+    rgba(255,255,255,0.8);
+
+  text-align: center;
+
+`;
+
+
+// =====================================================
+// NO LORRY ICON
+// =====================================================
+
+const NoLorryIcon = styled.div`
+
+  width: 95px;
+
+  height: 95px;
+
+  display: flex;
+
+  align-items: center;
+
+  justify-content: center;
+
+  border-radius: 25px;
+
+  background: #ecfdf5;
+
+  font-size: 42px;
+
+`;
+
+
+// =====================================================
+// NO LORRY TITLE
+// =====================================================
+
+const NoLorryTitle = styled.h2`
+
+  margin: 22px 0 0;
+
+  color: #172554;
+
+  font-size: 29px;
+
+  font-weight: 900;
+
+`;
+
+
+// =====================================================
+// NO LORRY TEXT
+// =====================================================
+
+const NoLorryText = styled.p`
+
+  margin: 10px 0 0;
+
+  color: #64748b;
+
+  font-size: 14px;
+
+  line-height: 1.7;
+
+`;
+
+
+// =====================================================
+// FOOTER
+// =====================================================
+
+const Footer = styled.footer`
+
+  max-width: 1550px;
+
+  margin: 0 auto;
+
+  padding:
+    28px 42px;
+
+  display: flex;
+
+  align-items: center;
+
+  justify-content: space-between;
+
+  gap: 25px;
+
+  border-top:
+    1px solid #dce7e1;
+
+`;
+
+
+// =====================================================
+// FOOTER COMPANY
+// =====================================================
+
+const FooterCompany = styled.div`
+
+  color: #166534;
+
+  font-size: 13px;
+
+  font-weight: 900;
+
+`;
+
+
+// =====================================================
+// FOOTER QUOTE
+// =====================================================
+
+const FooterQuote = styled.div`
+
+  color: #64748b;
+
+  font-size: 11px;
+
+  font-style: italic;
+
+`;
+
+
+// =====================================================
+// FOOTER SINCE
+// =====================================================
+
+const FooterSince = styled.div`
+
+  color: #94a3b8;
+
+  font-size: 11px;
+
+  font-weight: 800;
+
+`;
+
+
+// =====================================================
+// RESPONSIVE
+// =====================================================
+
+const ResponsiveStyle = styled.div`
+
+  @media (max-width: 1100px) {
+
+    ${LorryHero} {
+
+      grid-template-columns:
+        1fr;
+
+    }
+
+
+    ${LorryImageContainer} {
+
+      min-height: 430px;
+
+    }
+
+
+    ${LorryImageContainer} img {
+
+      min-height: 430px;
+
+    }
+
+
+    ${ModuleGrid} {
+
+      grid-template-columns:
+        1fr;
+
+    }
+
+  }
+
+
+  @media (max-width: 750px) {
+
+    ${TopBar} {
+
+      height: 78px;
+
+      padding: 0 15px;
+
+    }
+
+
+    ${MenuButton} {
+
+      left: 15px;
+
+      width: 46px;
+
+      height: 46px;
+
+    }
+
+
+    ${BrandLogo} {
+
+      width: 44px;
+
+      height: 44px;
+
+    }
+
+
+    ${CompanyName} {
+
+      font-size: 15px;
+
+    }
+
+
+    ${CompanySubtitle} {
+
+      display: none;
+
+    }
+
+
+    ${UserArea} {
+
+      right: 15px;
+
+    }
+
+
+    ${UserInfo} {
+
+      display: none;
+
+    }
+
+
+    ${Main} {
+
+      padding:
+        35px 18px 50px;
+
+    }
+
+
+    ${IntroTitle} {
+
+      font-size: 40px;
+
+    }
+
+
+    ${LorryInformation} {
+
+      padding: 30px 23px;
+
+    }
+
+
+    ${InfoTitle} {
+
+      font-size: 31px;
+
+    }
+
+
+    ${DetailsGrid} {
+
+      grid-template-columns:
+        1fr;
+
+    }
+
+
+    ${OperationsHeader} {
+
+      align-items: flex-start;
+
+      flex-direction: column;
+
+    }
+
+
+    ${ExperienceBanner} {
+
+      align-items: flex-start;
+
+      flex-direction: column;
+
+      padding: 30px;
+
+    }
+
+
+    ${ExperienceSince} {
+
+      padding-left: 0;
+
+      padding-top: 20px;
+
+      border-left: none;
+
+      border-top:
+        3px solid #86efac;
+
+    }
+
+
+    ${Footer} {
+
+      align-items: flex-start;
+
+      flex-direction: column;
+
+      padding:
+        25px 20px;
+
+    }
+
+  }
+
+
+  @media (max-width: 500px) {
+
+    ${SideMenu} {
+
+      width: 90%;
+
+    }
+
+
+    ${LorryImageContainer} {
+
+      min-height: 350px;
+
+    }
+
+
+    ${LorryImageContainer} img {
+
+      min-height: 350px;
+
+    }
+
+
+    ${RegistrationArea} {
+
+      left: 22px;
+
+      bottom: 22px;
+
+    }
+
+
+    ${RegistrationNumber} {
+
+      font-size: 37px;
+
+    }
+
+
+    ${ModuleCard} {
+
+      min-height: auto;
+
+      padding: 24px;
+
+      flex-direction: column;
+
+    }
+
+
+    ${ModuleIcon} {
+
+      width: 62px;
+
+      height: 62px;
+
+    }
+
+
+    ${ExperienceTitle} {
+
+      font-size: 27px;
+
+    }
+
+  }
+
+`;
+
+
+// =====================================================
+// RESPONSIVE STYLE MOUNT
+// =====================================================
+
+const ResponsiveStyleMount = () => {
+
+  return (
+    <ResponsiveStyle />
+  );
+
+};

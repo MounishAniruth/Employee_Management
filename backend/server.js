@@ -9,6 +9,7 @@ const authRoutes = require('./routes/authRoutes');
 const lorryRoutes = require('./routes/lorryRoutes');
 const employeeRoutes = require('./routes/employeeRoutes'); 
 const salaryRoutes = require('./routes/salaryRoutes');
+const pointRoutes = require('./routes/pointRoutes');
 const fuelRoutes = require("./routes/fuelRoutes");
 dotenv.config();
 
@@ -24,6 +25,7 @@ app.use('/api/lorry', lorryRoutes);
 app.use('/api/employee', employeeRoutes);   
 app.use('/api/salary', salaryRoutes);       
 app.use("/api/fuel", fuelRoutes);
+app.use("/api/point", pointRoutes);
 
 // Health check route
 app.get('/api/health', (req, res) => {

@@ -17,6 +17,7 @@ import LorryManagerPage from "./pages/LorryManagerPage";
 import DashboardPage from "./pages/DashboardPage";
 import EmployeePage from "./pages/EmployeePage";
 import FuelPage from "./pages/FuelPage";
+import PointDetails from "./pages/PointDetails";
 
 
 function App() {
@@ -91,6 +92,11 @@ function App() {
         <Route
           path="/fuel/:lorryId"
           element={<FuelPage />}
+        />
+
+        <Route
+          path="/point-details/:id"
+          element={<PointDetails />}
         />
 
       </Routes>

@@ -1,5 +1,5 @@
 import React, { useState } from "react";
-import axios from "axios";
+import api from "../utils/api";
 import {
   Snackbar,
   Container as MuiContainer,
@@ -79,8 +79,8 @@ const LoginPage = () => {
     try {
       setLoading(true);
 
-      const response = await axios.post(
-        "http://localhost:5001/api/auth/login",
+      const response = await api.post(
+        "/auth/login",
         loginData
       );
 

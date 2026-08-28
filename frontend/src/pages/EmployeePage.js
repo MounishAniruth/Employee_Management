@@ -5,7 +5,7 @@ import React, {
   useState
 } from "react";
 
-import axios from "axios";
+import api from "../utils/api";
 
 import {
   useNavigate,
@@ -13,14 +13,6 @@ import {
 } from "react-router-dom";
 
 import styled from "styled-components";
-
-
-// =====================================================
-// API CONFIGURATION
-// =====================================================
-
-const API_BASE_URL =
-  "http://localhost:5001/api";
 
 
 // =====================================================
@@ -33,45 +25,6 @@ const EMPLOYEE_ROLES = [
   "worker",
   "lorry_manager"
 ];
-
-
-// =====================================================
-// AXIOS
-// =====================================================
-
-const getToken = () => {
-  return (
-    localStorage.getItem("token") ||
-    localStorage.getItem("authToken") ||
-    ""
-  );
-};
-
-
-const api = axios.create({
-  baseURL: API_BASE_URL,
-  headers: {
-    "Content-Type": "application/json"
-  }
-});
-
-
-api.interceptors.request.use(
-  (config) => {
-
-    const token = getToken();
-
-    if (token) {
-      config.headers.Authorization =
-        `Bearer ${token}`;
-    }
-
-    return config;
-
-  },
-  (error) =>
-    Promise.reject(error)
-);
 
 
 // =====================================================

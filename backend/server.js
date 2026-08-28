@@ -7,7 +7,7 @@ require("dotenv").config();
 
 const authRoutes = require('./routes/authRoutes');
 const lorryRoutes = require('./routes/lorryRoutes');
-const employeeRoutes = require('./routes/employeeRoutes'); 
+const employeeRoutes = require('./routes/employeeRoutes');
 const salaryRoutes = require('./routes/salaryRoutes');
 const pointRoutes = require('./routes/pointRoutes');
 const fuelRoutes = require("./routes/fuelRoutes");
@@ -16,14 +16,40 @@ dotenv.config();
 const app = express();
 
 // Middleware
-app.use(cors());
+
+const allowedOrigins = [
+  "http://localhost:3000",
+  "https://your-netlify-site.netlify.app", // replace with your actual Netlify site URL
+  "https://sri-murugan-transport.netlify.app", // fallback / common placeholder
+];
+
+app.use(
+  cors({
+    origin: (origin, callback) => {
+      // Allow requests with no origin (like mobile apps or curl)
+      if (!origin) return callback(null, true);
+      // Allow listed origins
+      if (allowedOrigins.includes(origin)) {
+        return callback(null, true);
+      }
+      // Allow Netlify preview deployments (origin contains .netlify.app and ends with -preview)
+      if (origin.includes(".netlify.app") && origin.includes("-preview")) {
+        return callback(null, true);
+      }
+      // Deny others
+      console.warn("🚫 Blocked origin:", origin);
+      callback(new Error("Not allowed by CORS"), false);
+    },
+    credentials: true,
+  })
+);
 app.use(bodyParser.json());
 
 // Define API routes with appropriate prefixes
-app.use('/api/auth', authRoutes);           
-app.use('/api/lorry', lorryRoutes);         
-app.use('/api/employee', employeeRoutes);   
-app.use('/api/salary', salaryRoutes);       
+app.use('/api/auth', authRoutes);
+app.use('/api/lorry', lorryRoutes);
+app.use('/api/employee', employeeRoutes);
+app.use('/api/salary', salaryRoutes);
 app.use("/api/fuel", fuelRoutes);
 app.use("/api/point", pointRoutes);
 

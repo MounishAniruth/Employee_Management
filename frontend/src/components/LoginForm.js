@@ -1,6 +1,6 @@
 import React, { useState } from "react";
 import { useNavigate } from "react-router-dom";
-import axios from "axios";
+import api from "../utils/api";
 import "./styles/Login.css";
 
 const Login = () => {
@@ -35,8 +35,8 @@ const Login = () => {
 
     try {
       // Login API
-      const response = await axios.post(
-        "http://localhost:5001/api/auth/login",
+      const response = await api.post(
+        "/auth/login",
         {
           identifier: formData.identifier,
           password: formData.password,

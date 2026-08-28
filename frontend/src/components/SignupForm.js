@@ -1,5 +1,5 @@
 import React, { useState } from "react";
-import axios from "axios";
+import api from "../utils/api";
 import "./styles/Signup.css";
 
 const Signup = () => {
@@ -28,7 +28,7 @@ const Signup = () => {
     }
 
     try {
-      const response = await axios.post("http://localhost:5001/api/auth/signup", formData);
+      const response = await api.post("/auth/signup", formData);
       alert(response.data.message);
     } catch (err) {
       setError(err.response?.data?.message || "Something went wrong!");

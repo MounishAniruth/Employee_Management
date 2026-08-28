@@ -15,34 +15,31 @@ dotenv.config();
 
 const app = express();
 
-// Middleware
-
-const allowedOrigins = [
-  "http://localhost:3000",
-  "https://your-netlify-site.netlify.app", // replace with your actual Netlify site URL
-  "https://sri-murugan-transport.netlify.app", // fallback / common placeholder
-];
-
+// CORS Configuration
 app.use(
   cors({
     origin: (origin, callback) => {
-      // Allow requests with no origin (like mobile apps or curl)
-      if (!origin) return callback(null, true);
-      // Allow listed origins
-      if (allowedOrigins.includes(origin)) {
+      // Allow requests with no origin, localhost, any .netlify.app domain, or configured FRONTEND_URL
+      if (
+        !origin ||
+        origin.includes("localhost") ||
+        origin.includes("127.0.0.1") ||
+        origin.endsWith(".netlify.app") ||
+        origin === process.env.FRONTEND_URL
+      ) {
         return callback(null, true);
       }
-      // Allow Netlify preview deployments (origin contains .netlify.app and ends with -preview)
-      if (origin.includes(".netlify.app") && origin.includes("-preview")) {
-        return callback(null, true);
-      }
-      // Deny others
-      console.warn("🚫 Blocked origin:", origin);
-      callback(new Error("Not allowed by CORS"), false);
+      return callback(null, true);
     },
     credentials: true,
+    methods: ["GET", "POST", "PUT", "DELETE", "PATCH", "OPTIONS"],
+    allowedHeaders: ["Content-Type", "Authorization", "X-Requested-With", "Accept"],
   })
 );
+
+// Explicitly handle preflight requests
+app.options("*", cors());
+
 app.use(bodyParser.json());
 
 // Define API routes with appropriate prefixes
@@ -50,8 +47,17 @@ app.use('/api/auth', authRoutes);
 app.use('/api/lorry', lorryRoutes);
 app.use('/api/employee', employeeRoutes);
 app.use('/api/salary', salaryRoutes);
-app.use("/api/fuel", fuelRoutes);
-app.use("/api/point", pointRoutes);
+app.use('/api/fuel', fuelRoutes);
+app.use('/api/point', pointRoutes);
+
+// Root route
+app.get('/', (req, res) => {
+  res.json({
+    status: 'OK',
+    message: 'Sri Murugan Rig Service API is running successfully!',
+    timestamp: new Date().toISOString()
+  });
+});
 
 // Health check route
 app.get('/api/health', (req, res) => {

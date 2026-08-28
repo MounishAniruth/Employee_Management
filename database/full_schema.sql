@@ -28,6 +28,7 @@ CREATE TABLE IF NOT EXISTS `users` (
 CREATE TABLE IF NOT EXISTS `lorries` (
   `id` int NOT NULL AUTO_INCREMENT,
   `owner_id` int NOT NULL,
+  `lorry_manager_id` int DEFAULT NULL,
   `registration_number` varchar(20) NOT NULL,
   `model` varchar(100) NOT NULL,
   `year_built` int NOT NULL,
@@ -40,7 +41,9 @@ CREATE TABLE IF NOT EXISTS `lorries` (
   PRIMARY KEY (`id`),
   UNIQUE KEY `registration_number` (`registration_number`),
   KEY `fk_owner_id` (`owner_id`),
-  CONSTRAINT `fk_owner_id` FOREIGN KEY (`owner_id`) REFERENCES `users` (`id`) ON DELETE CASCADE
+  KEY `fk_lorry_manager_id` (`lorry_manager_id`),
+  CONSTRAINT `fk_owner_id` FOREIGN KEY (`owner_id`) REFERENCES `users` (`id`) ON DELETE CASCADE,
+  CONSTRAINT `fk_lorry_manager_id` FOREIGN KEY (`lorry_manager_id`) REFERENCES `users` (`id`) ON DELETE SET NULL
 ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_0900_ai_ci;
 
 -- --------------------------------------------------------------------
@@ -48,6 +51,7 @@ CREATE TABLE IF NOT EXISTS `lorries` (
 -- --------------------------------------------------------------------
 CREATE TABLE IF NOT EXISTS `employees` (
   `id` int NOT NULL AUTO_INCREMENT,
+  `user_id` int DEFAULT NULL,
   `lorry_id` int NOT NULL,
   `name` varchar(255) NOT NULL,
   `phone` varchar(30) NOT NULL,
@@ -58,7 +62,9 @@ CREATE TABLE IF NOT EXISTS `employees` (
   PRIMARY KEY (`id`),
   UNIQUE KEY `phone` (`phone`),
   KEY `fk_employees_lorry` (`lorry_id`),
-  CONSTRAINT `fk_employees_lorry` FOREIGN KEY (`lorry_id`) REFERENCES `lorries` (`id`) ON DELETE CASCADE
+  KEY `fk_employees_user` (`user_id`),
+  CONSTRAINT `fk_employees_lorry` FOREIGN KEY (`lorry_id`) REFERENCES `lorries` (`id`) ON DELETE CASCADE,
+  CONSTRAINT `fk_employees_user` FOREIGN KEY (`user_id`) REFERENCES `users` (`id`) ON DELETE SET NULL
 ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_0900_ai_ci;
 
 -- --------------------------------------------------------------------

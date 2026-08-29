@@ -636,13 +636,7 @@ const Lorry = {
       // The employee record remains for salary history.
       // ================================================
 
-      if (managerId) {
-
-        console.log(
-          `Lorry manager ${managerId} removed from lorry ${lorryId}. Employee salary history preserved.`
-        );
-
-      }
+      // Employee salary history preserved
 
 
       await connection.commit();

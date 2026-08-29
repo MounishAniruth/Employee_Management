@@ -78,13 +78,6 @@ const signup = async (req, res) => {
 
       });
 
-
-    console.log(
-      "User created with ID:",
-      result.insertId
-    );
-
-
     return res.status(201).json({
 
       message:

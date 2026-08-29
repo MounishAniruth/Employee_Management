@@ -38,12 +38,6 @@ router.post(
 
     try {
 
-      console.log(
-        "Add salary request:",
-        req.body
-      );
-
-
       // ================================================
       // VALIDATION
       // ================================================
@@ -198,13 +192,6 @@ router.get(
         phone
       } = req.params;
 
-
-      console.log(
-        "Fetching salary records for phone:",
-        phone
-      );
-
-
       // ================================================
       // VALIDATE PHONE
       // ================================================
@@ -282,13 +269,6 @@ router.get(
       const employee =
         employeeRows[0];
 
-
-      console.log(
-        "Employee found:",
-        employee
-      );
-
-
       // ================================================
       // GET SALARY RECORDS
       // ================================================
@@ -298,13 +278,6 @@ router.get(
           .getSalaryRecordsByEmployee(
             employee.id
           );
-
-
-      console.log(
-        "Salary records:",
-        salaryRecords
-      );
-
 
       // ================================================
       // RETURN SALARY RECORDS
@@ -441,18 +414,6 @@ router.put(
 
 
     try {
-
-      console.log(
-        "Update salary request:",
-        {
-          salaryId,
-          startDate,
-          endDate,
-          expensePaid,
-          expensePaymentMethod
-        }
-      );
-
 
       // ================================================
       // VALIDATION

@@ -187,12 +187,6 @@ router.get(
         req.params.phone;
 
 
-      console.log(
-        "Fetching employee details for phone:",
-        phone
-      );
-
-
       const employee =
         await Employee.findByPhone(
           phone
@@ -426,18 +420,6 @@ router.put(
       } = req.body;
 
 
-      console.log(
-        "🔥 UPDATE EXPENSE ROUTE HIT:",
-        phone
-      );
-
-
-      console.log(
-        "Expense request body:",
-        req.body
-      );
-
-
       // ================================================
       // VALIDATE PHONE
       // ================================================
@@ -582,24 +564,6 @@ router.put(
         employee.id;
 
 
-      console.log(
-        "Employee found:",
-        {
-          id:
-            employee.id,
-
-          name:
-            employee.name,
-
-          phone:
-            employee.phone,
-
-          role:
-            employee.role
-        }
-      );
-
-
       // ================================================
       // FIND EXISTING SALARY RECORD
       //
@@ -641,12 +605,6 @@ router.put(
       );
 
 
-      console.log(
-        "Existing salary records:",
-        existingRecords
-      );
-
-
       // ================================================
       // UPDATE EXISTING RECORD
       // ================================================
@@ -657,13 +615,6 @@ router.put(
 
         const salaryId =
           existingRecords[0].id;
-
-
-        console.log(
-          "Updating existing salary record:",
-          salaryId
-        );
-
 
         const [
           result
@@ -686,13 +637,6 @@ router.put(
           ]
         );
 
-
-        console.log(
-          "Salary record updated:",
-          result
-        );
-
-
         return res.status(200).json({
 
           message:
@@ -709,16 +653,6 @@ router.put(
       // ================================================
       // INSERT NEW RECORD
       // ================================================
-
-      console.log(
-        "No existing salary record found."
-      );
-
-
-      console.log(
-        "Creating new salary record..."
-      );
-
 
       const [
         result
@@ -742,12 +676,6 @@ router.put(
           expenseAmount,
           expensePaymentMethod
         ]
-      );
-
-
-      console.log(
-        "Salary record inserted:",
-        result
       );
 
 
@@ -1039,12 +967,6 @@ router.delete(
 
       const phone =
         req.params.phone;
-
-
-      console.log(
-        "Deleting employee with phone:",
-        phone
-      );
 
 
       // ================================================

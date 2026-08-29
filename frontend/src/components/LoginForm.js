@@ -43,8 +43,6 @@ const Login = () => {
         }
       );
 
-      console.log("Login response:", response.data);
-
       // Save JWT token
       localStorage.setItem(
         "authToken",

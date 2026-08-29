@@ -8,7 +8,7 @@ import {
   useNavigate
 } from "react-router-dom";
 
-import styled from "styled-components";
+import styled, { createGlobalStyle } from "styled-components";
 
 import api from "../utils/api";
 
@@ -3513,7 +3513,7 @@ const FooterSince = styled.div`
 // RESPONSIVE
 // =====================================================
 
-const ResponsiveStyle = styled.div`
+const ResponsiveStyle = createGlobalStyle`
 
   @media (max-width: 1250px) {
 

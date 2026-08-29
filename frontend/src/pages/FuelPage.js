@@ -9,7 +9,7 @@ import {
   useNavigate
 } from "react-router-dom";
 
-import styled from "styled-components";
+import styled, { createGlobalStyle } from "styled-components";
 
 import {
   TextField
@@ -385,18 +385,10 @@ const FuelPage = () => {
         setLoading(true);
 
 
-        const response =
-          await api.post(
-            "/fuel/add",
-            fuelData
-          );
-
-
-        console.log(
-          "Fuel added:",
-          response.data
+        await api.post(
+          "/fuel/add",
+          fuelData
         );
-
 
         alert(
           "Fuel details added successfully!"
@@ -3286,6 +3278,12 @@ const StyledTextField = styled(TextField)`
 const InputWithPrefix = styled.div`
 
   position: relative;
+  width: 100%;
+
+  .MuiInputBase-input,
+  input {
+    padding-left: 32px !important;
+  }
 
 `;
 
@@ -3314,6 +3312,10 @@ const Prefix = styled.div`
 
   font-weight: 900;
 
+  pointer-events: none;
+
+  line-height: 1;
+
 `;
 
 
@@ -3324,6 +3326,12 @@ const Prefix = styled.div`
 const InputWithUnit = styled.div`
 
   position: relative;
+  width: 100%;
+
+  .MuiInputBase-input,
+  input {
+    padding-right: 36px !important;
+  }
 
 `;
 
@@ -3351,6 +3359,10 @@ const Unit = styled.div`
   font-size: 12px;
 
   font-weight: 900;
+
+  pointer-events: none;
+
+  line-height: 1;
 
 `;
 
@@ -4784,7 +4796,7 @@ const LoadingText = styled.div`
 // RESPONSIVE
 // =====================================================
 
-const ResponsiveStyle = styled.div`
+const ResponsiveStyle = createGlobalStyle`
 
   @media (max-width: 1100px) {
 
@@ -4811,15 +4823,17 @@ const ResponsiveStyle = styled.div`
     ${Page} {
 
       padding:
-        20px 20px 50px;
+        20px 16px 50px;
 
     }
 
 
     ${Hero} {
 
-      padding:
-        40px 35px;
+      min-height: auto;
+
+      padding: 32px 24px;
+      border-radius: 20px;
 
     }
 
@@ -4827,7 +4841,7 @@ const ResponsiveStyle = styled.div`
     ${HeroTitle} {
 
       font-size:
-        40px;
+        32px;
 
     }
 
@@ -4859,10 +4873,43 @@ const ResponsiveStyle = styled.div`
     }
 
 
+    ${SummaryGrid} {
+
+      grid-template-columns:
+        repeat(2, minmax(0, 1fr));
+      gap: 12px;
+
+    }
+
+    ${SummaryCard} {
+
+      min-height: 95px;
+      padding: 14px 12px;
+      gap: 12px;
+      border-radius: 16px;
+
+    }
+
+    ${SummaryIcon} {
+
+      width: 42px;
+      height: 42px;
+      font-size: 20px;
+      border-radius: 12px;
+
+    }
+
+    ${SummaryValue} {
+
+      font-size: 20px;
+
+    }
+
+
     ${HistoryFooter} {
 
       grid-template-columns:
-        repeat(3, 1fr);
+        repeat(2, 1fr);
 
     }
 
@@ -4874,7 +4921,7 @@ const ResponsiveStyle = styled.div`
     ${Page} {
 
       padding:
-        14px 14px 40px;
+        14px 12px 40px;
 
     }
 
@@ -4882,7 +4929,7 @@ const ResponsiveStyle = styled.div`
     ${TopBar} {
 
       min-height:
-        52px;
+        48px;
 
     }
 
@@ -4898,13 +4945,13 @@ const ResponsiveStyle = styled.div`
     ${Hero} {
 
       min-height:
-        390px;
+        auto;
 
       padding:
-        32px 25px;
+        24px 18px;
 
       border-radius:
-        22px;
+        18px;
 
     }
 
@@ -4912,7 +4959,7 @@ const ResponsiveStyle = styled.div`
     ${HeroTitle} {
 
       font-size:
-        34px;
+        24px;
 
     }
 
@@ -4920,7 +4967,7 @@ const ResponsiveStyle = styled.div`
     ${HeroDescription} {
 
       font-size:
-        14px;
+        13px;
 
     }
 
@@ -4939,7 +4986,39 @@ const ResponsiveStyle = styled.div`
     ${SummaryGrid} {
 
       grid-template-columns:
-        1fr;
+        repeat(2, minmax(0, 1fr));
+      gap: 10px;
+
+    }
+
+    ${SummaryCard} {
+
+      min-height: 80px;
+      padding: 12px 10px;
+      gap: 10px;
+      border-radius: 14px;
+
+    }
+
+    ${SummaryIcon} {
+
+      width: 36px;
+      height: 36px;
+      font-size: 18px;
+      border-radius: 10px;
+
+    }
+
+    ${SummaryLabel} {
+
+      font-size: 9px;
+
+    }
+
+    ${SummaryValue} {
+
+      font-size: 17px;
+      margin-top: 2px;
 
     }
 
@@ -4947,7 +5026,7 @@ const ResponsiveStyle = styled.div`
     ${SectionTitle} {
 
       font-size:
-        25px;
+        22px;
 
     }
 
@@ -4966,7 +5045,8 @@ const ResponsiveStyle = styled.div`
     ${FuelFormCard} {
 
       padding:
-        19px;
+        16px;
+      border-radius: 16px;
 
     }
 
@@ -4975,6 +5055,7 @@ const ResponsiveStyle = styled.div`
 
       grid-template-columns:
         1fr;
+      gap: 12px;
 
     }
 
@@ -5051,7 +5132,7 @@ const ResponsiveStyle = styled.div`
     ${HeroTitle} {
 
       font-size:
-        30px;
+        22px;
 
     }
 
@@ -5059,7 +5140,38 @@ const ResponsiveStyle = styled.div`
     ${HeroDescription} {
 
       font-size:
-        13px;
+        12px;
+
+    }
+
+
+    ${SummaryGrid} {
+
+      grid-template-columns:
+        repeat(2, minmax(0, 1fr));
+      gap: 8px;
+
+    }
+
+    ${SummaryCard} {
+
+      min-height: 72px;
+      padding: 10px 8px;
+      gap: 8px;
+
+    }
+
+    ${SummaryIcon} {
+
+      width: 32px;
+      height: 32px;
+      font-size: 16px;
+
+    }
+
+    ${SummaryValue} {
+
+      font-size: 15px;
 
     }
 
@@ -5090,17 +5202,3 @@ const ResponsiveStyle = styled.div`
   }
 
 `;
-
-
-// =====================================================
-// NOTE
-// =====================================================
-//
-// ResponsiveStyle is intentionally included as a
-// CSS component. To activate it, render:
-//
-// <ResponsiveStyle />
-//
-// immediately inside the Page.
-//
-// =====================================================

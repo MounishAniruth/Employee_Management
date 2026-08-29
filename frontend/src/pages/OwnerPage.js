@@ -140,11 +140,6 @@ const OwnerPage = () => {
           response.data
         );
 
-        console.log(
-          "Owner - Lorries:",
-          response.data
-        );
-
       } catch (error) {
 
         console.error(
@@ -194,11 +189,6 @@ const OwnerPage = () => {
           );
 
         setManagers(
-          response.data
-        );
-
-        console.log(
-          "Available lorry managers:",
           response.data
         );
 

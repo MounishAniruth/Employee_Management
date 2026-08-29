@@ -3,7 +3,7 @@ import React, {
   useEffect
 } from "react";
 
-import styled from "styled-components";
+import styled, { createGlobalStyle } from "styled-components";
 
 import {
   useNavigate
@@ -741,9 +741,9 @@ const HomePage = () => {
           </LoadingTitle>
 
 
-          <LoadingText>
+          <LoadingCardSubtitle>
             Loading your fleet...
-          </LoadingText>
+          </LoadingCardSubtitle>
 
         </LoadingCard>
 
@@ -4660,10 +4660,10 @@ const LoadingTitle = styled.div`
 
 
 // =====================================================
-// LOADING TEXT
+// LOADING CARD SUBTITLE
 // =====================================================
 
-const LoadingText = styled.div`
+const LoadingCardSubtitle = styled.div`
 
   margin-top:
     7px;
@@ -4681,7 +4681,7 @@ const LoadingText = styled.div`
 // RESPONSIVE
 // =====================================================
 
-const ResponsiveStyles = styled.div`
+const ResponsiveStyles = createGlobalStyle`
 
   @media (max-width: 1200px) {
 

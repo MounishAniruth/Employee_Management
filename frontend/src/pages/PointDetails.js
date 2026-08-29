@@ -1314,20 +1314,6 @@ const PointDetails = () => {
           response.data;
 
 
-        if (
-          Number(data.lorry_id) !==
-          Number(id)
-        ) {
-
-          setError(
-            "This point does not belong to the selected rig."
-          );
-
-          return;
-
-        }
-
-
         setSelectedPoint(data);
 
 
@@ -4220,134 +4206,138 @@ const PointDetails = () => {
                 {selectedPoint.depth_rates &&
                 selectedPoint.depth_rates.length > 0 ? (
 
-                  <DetailsTable>
+                  <DetailsTableWrapper>
 
-                    <thead>
+                    <DetailsTable>
 
-                      <tr>
+                      <thead>
 
-                        <DetailsTableHeader>
-                          FROM
-                        </DetailsTableHeader>
+                        <tr>
 
-
-                        <DetailsTableHeader>
-                          TO
-                        </DetailsTableHeader>
+                          <DetailsTableHeader>
+                            FROM
+                          </DetailsTableHeader>
 
 
-                        <DetailsTableHeader>
-                          RATE / FT
-                        </DetailsTableHeader>
+                          <DetailsTableHeader>
+                            TO
+                          </DetailsTableHeader>
 
 
-                        <DetailsTableHeader>
-                          DEPTH
-                        </DetailsTableHeader>
+                          <DetailsTableHeader>
+                            RATE / FT
+                          </DetailsTableHeader>
 
 
-                        <DetailsTableHeader>
-                          AMOUNT
-                        </DetailsTableHeader>
-
-                      </tr>
-
-                    </thead>
+                          <DetailsTableHeader>
+                            DEPTH
+                          </DetailsTableHeader>
 
 
-                    <tbody>
+                          <DetailsTableHeader>
+                            AMOUNT
+                          </DetailsTableHeader>
 
-                      {selectedPoint.depth_rates.map(
-                        (
-                          rate,
-                          index
-                        ) => {
+                        </tr>
 
-                          const from =
-                            Number(
-                              rate.from_depth
-                            ) || 0;
+                      </thead>
 
 
-                          const to =
-                            Number(
-                              rate.to_depth
-                            ) || 0;
+                      <tbody>
+
+                        {selectedPoint.depth_rates.map(
+                          (
+                            rate,
+                            index
+                          ) => {
+
+                            const from =
+                              Number(
+                                rate.from_depth
+                              ) || 0;
 
 
-                          const ratePerFt =
-                            Number(
-                              rate.rate_per_ft
-                            ) || 0;
+                            const to =
+                              Number(
+                                rate.to_depth
+                              ) || 0;
 
 
-                          const totalDepth =
-                            Number(
-                              selectedPoint.total_depth
-                            ) || 0;
+                            const ratePerFt =
+                              Number(
+                                rate.rate_per_ft
+                              ) || 0;
 
 
-                          const applicableDepth =
-                            totalDepth > from
-
-                              ? Math.max(
-                                  0,
-                                  Math.min(
-                                    totalDepth,
-                                    to
-                                  ) - from
-                                )
-
-                              : 0;
+                            const totalDepth =
+                              Number(
+                                selectedPoint.total_depth
+                              ) || 0;
 
 
-                          const amount =
-                            applicableDepth *
-                            ratePerFt;
+                            const applicableDepth =
+                              totalDepth > from
+
+                                ? Math.max(
+                                    0,
+                                    Math.min(
+                                      totalDepth,
+                                      to
+                                    ) - from
+                                  )
+
+                                : 0;
 
 
-                          return (
-
-                            <tr
-                              key={index}
-                            >
-
-                              <DetailsTableCell>
-                                {from} ft
-                              </DetailsTableCell>
+                            const amount =
+                              applicableDepth *
+                              ratePerFt;
 
 
-                              <DetailsTableCell>
-                                {to} ft
-                              </DetailsTableCell>
+                            return (
+
+                              <tr
+                                key={index}
+                              >
+
+                                <DetailsTableCell>
+                                  {from} ft
+                                </DetailsTableCell>
 
 
-                              <DetailsTableCell>
-                                ₹
-                                {ratePerFt.toLocaleString()}
-                              </DetailsTableCell>
+                                <DetailsTableCell>
+                                  {to} ft
+                                </DetailsTableCell>
 
 
-                              <DetailsTableCell>
-                                {applicableDepth.toLocaleString()} ft
-                              </DetailsTableCell>
+                                <DetailsTableCell>
+                                  ₹
+                                  {ratePerFt.toLocaleString()}
+                                </DetailsTableCell>
 
 
-                              <DetailsTableCell>
-                                ₹
-                                {amount.toLocaleString()}
-                              </DetailsTableCell>
+                                <DetailsTableCell>
+                                  {applicableDepth.toLocaleString()} ft
+                                </DetailsTableCell>
 
-                            </tr>
 
-                          );
+                                <DetailsTableCell>
+                                  ₹
+                                  {amount.toLocaleString()}
+                                </DetailsTableCell>
 
-                        }
-                      )}
+                              </tr>
 
-                    </tbody>
+                            );
 
-                  </DetailsTable>
+                          }
+                        )}
+
+                      </tbody>
+
+                    </DetailsTable>
+
+                  </DetailsTableWrapper>
 
                 ) : (
 
@@ -4374,101 +4364,108 @@ const PointDetails = () => {
                 {selectedPoint.casing_details &&
                 selectedPoint.casing_details.length > 0 ? (
 
-                  <DetailsTable>
+                  <DetailsTableWrapper>
 
-                    <thead>
+                    <DetailsTable>
 
-                      <tr>
+                      <thead>
 
-                        <DetailsTableHeader>
-                          PIPE SIZE
-                        </DetailsTableHeader>
+                        <tr>
 
-
-                        <DetailsTableHeader>
-                          DEPTH
-                        </DetailsTableHeader>
+                          <DetailsTableHeader>
+                            PIPE SIZE
+                          </DetailsTableHeader>
 
 
-                        <DetailsTableHeader>
-                          RATE / FT
-                        </DetailsTableHeader>
+                          <DetailsTableHeader>
+                            DEPTH
+                          </DetailsTableHeader>
 
 
-                        <DetailsTableHeader>
-                          AMOUNT
-                        </DetailsTableHeader>
-
-                      </tr>
-
-                    </thead>
+                          <DetailsTableHeader>
+                            RATE / FT
+                          </DetailsTableHeader>
 
 
-                    <tbody>
+                          <DetailsTableHeader>
+                            AMOUNT
+                          </DetailsTableHeader>
 
-                      {selectedPoint.casing_details.map(
-                        (
-                          casing,
-                          index
-                        ) => {
+                        </tr>
 
-                          const depth =
-                            Number(
-                              casing.casing_depth
-                            ) || 0;
+                      </thead>
 
 
-                          const rate =
-                            Number(
-                              casing.rate_per_ft
-                            ) || 0;
+                      <tbody>
+
+                        {selectedPoint.casing_details.map(
+                          (
+                            casing,
+                            index
+                          ) => {
+
+                            const depth =
+                              Number(
+                                casing.casing_depth ||
+                                  casing.depth
+                              ) || 0;
 
 
-                          const amount =
-                            depth *
-                            rate;
+                            const rate =
+                              Number(
+                                casing.rate_per_ft
+                              ) || 0;
 
 
-                          return (
-
-                            <tr
-                              key={index}
-                            >
-
-                              <DetailsTableCell>
-                                {
-                                  casing.pipe_size ||
-                                  "—"
-                                }
-                              </DetailsTableCell>
+                            const amount =
+                              Number(
+                                casing.amount
+                              ) ||
+                              depth * rate;
 
 
-                              <DetailsTableCell>
-                                {depth} ft
-                              </DetailsTableCell>
+                            return (
+
+                              <tr
+                                key={index}
+                              >
+
+                                <DetailsTableCell>
+                                  {
+                                    casing.pipe_size ||
+                                    "—"
+                                  }
+                                </DetailsTableCell>
 
 
-                              <DetailsTableCell>
-                                ₹
-                                {rate.toLocaleString()}
-                              </DetailsTableCell>
+                                <DetailsTableCell>
+                                  {depth} ft
+                                </DetailsTableCell>
 
 
-                              <DetailsTableCell>
-                                ₹
-                                {amount.toLocaleString()}
-                              </DetailsTableCell>
+                                <DetailsTableCell>
+                                  ₹
+                                  {rate.toLocaleString()}
+                                </DetailsTableCell>
 
-                            </tr>
 
-                          );
+                                <DetailsTableCell>
+                                  ₹
+                                  {amount.toLocaleString()}
+                                </DetailsTableCell>
 
-                        }
-                      )}
+                              </tr>
 
-                    </tbody>
+                            );
 
-                  </DetailsTable>
+                          }
+                        )}
+
+                      </tbody>
+
+                    </DetailsTable>
+
+                  </DetailsTableWrapper>
 
                 ) : (
 
@@ -7845,21 +7842,42 @@ const DetailValue = styled.div`
 
 
 // =====================================================
+// DETAILS TABLE WRAPPER
+// =====================================================
+
+const DetailsTableWrapper = styled.div`
+  width: 100%;
+  overflow-x: auto;
+  -webkit-overflow-scrolling: touch;
+  border: 1px solid #e3e9ed;
+  border-radius: 12px;
+  background: #ffffff;
+  margin-top: 10px;
+
+  &::-webkit-scrollbar {
+    height: 5px;
+  }
+
+  &::-webkit-scrollbar-track {
+    background: #f4f7f9;
+  }
+
+  &::-webkit-scrollbar-thumb {
+    background: #cbd5dc;
+    border-radius: 6px;
+  }
+`;
+
+
+// =====================================================
 // DETAILS TABLE
 // =====================================================
 
 const DetailsTable = styled.table`
   width: 100%;
-
+  min-width: 480px;
   border-collapse: collapse;
-
   background: #ffffff;
-
-  border: 1px solid #e3e9ed;
-
-  border-radius: 11px;
-
-  overflow: hidden;
 `;
 
 
@@ -7868,23 +7886,20 @@ const DetailsTable = styled.table`
 // =====================================================
 
 const DetailsTableHeader = styled.th`
-  padding: 13px 15px;
-
+  padding: 12px 14px;
   background: #f2f6f8;
-
   border-bottom: 1px solid #e2e8ec;
-
   color: #7d8c98;
-
-  font-size: 8px;
-
+  font-size: 9px;
   font-weight: 850;
-
   letter-spacing: 0.9px;
-
   text-align: left;
-
   white-space: nowrap;
+
+  @media (max-width: 600px) {
+    padding: 10px 10px;
+    font-size: 8px;
+  }
 `;
 
 
@@ -7893,21 +7908,20 @@ const DetailsTableHeader = styled.th`
 // =====================================================
 
 const DetailsTableCell = styled.td`
-  padding: 15px;
-
+  padding: 12px 14px;
   border-bottom: 1px solid #edf1f4;
-
   color: #536574;
-
   font-size: 13px;
-
   font-weight: 650;
-
   white-space: nowrap;
+
+  @media (max-width: 600px) {
+    padding: 10px 10px;
+    font-size: 12px;
+  }
 
   &:last-child {
     color: #0b263d;
-
     font-weight: 800;
   }
 `;

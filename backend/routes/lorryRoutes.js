@@ -135,12 +135,6 @@ router.get(
 
     try {
 
-      console.log(
-        "Fetching assigned lorry for user:",
-        req.user
-      );
-
-
       const lorry =
         await Lorry.findAssignedLorry(
           req.user.id

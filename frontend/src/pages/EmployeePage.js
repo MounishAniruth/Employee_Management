@@ -12,7 +12,7 @@ import {
   useParams
 } from "react-router-dom";
 
-import styled from "styled-components";
+import styled, { createGlobalStyle } from "styled-components";
 
 
 // =====================================================
@@ -637,10 +637,7 @@ const EmployeePage = () => {
 
         } catch (error) {
 
-          console.warn(
-            "Could not load salary records:",
-            error
-          );
+          // Silent fallback
 
         }
 
@@ -690,10 +687,7 @@ const EmployeePage = () => {
 
         } catch (error) {
 
-          console.warn(
-            "Could not load salary history:",
-            error
-          );
+          // Silent fallback
 
         }
 
@@ -3602,7 +3596,7 @@ const EmployeePage = () => {
 // GLOBAL STYLE
 // =====================================================
 
-const GlobalStyle = styled.div`
+const GlobalStyle = createGlobalStyle`
 
   * {
     box-sizing: border-box;
@@ -5985,6 +5979,14 @@ const MoneyInputWrapper = styled.div`
 
   align-items: center;
 
+  width: 100%;
+
+  ${FormInput} {
+
+    padding-left: 36px !important;
+
+  }
+
 `;
 
 
@@ -5996,15 +5998,23 @@ const MoneyPrefix = styled.div`
 
   position: absolute;
 
-  left: 16px;
+  left: 14px;
+
+  top: 50%;
+
+  transform: translateY(-50%);
 
   z-index: 2;
 
   color: #166534;
 
-  font-size: 17px;
+  font-size: 16px;
 
   font-weight: 900;
+
+  pointer-events: none;
+
+  line-height: 1;
 
 `;
 
@@ -7259,7 +7269,7 @@ const MiniCurrentBadge = styled.div`
 // RESPONSIVE DESIGN
 // =====================================================
 
-const ResponsiveStyle = styled.div`
+const ResponsiveStyle = createGlobalStyle`
 
   @media (max-width: 1250px) {
 
@@ -7360,16 +7370,16 @@ const ResponsiveStyle = styled.div`
 
     ${Hero} {
 
-      min-height: 380px;
+      min-height: auto;
 
-      padding: 40px 30px;
+      padding: 35px 25px;
 
     }
 
 
     ${HeroTitle} {
 
-      font-size: 35px;
+      font-size: 32px;
 
     }
 
@@ -7385,6 +7395,7 @@ const ResponsiveStyle = styled.div`
 
       grid-template-columns:
         repeat(2, minmax(0, 1fr));
+      gap: 12px;
 
     }
 
@@ -7393,6 +7404,7 @@ const ResponsiveStyle = styled.div`
 
       grid-template-columns:
         repeat(2, minmax(0, 1fr));
+      gap: 10px;
 
     }
 
@@ -7415,7 +7427,7 @@ const ResponsiveStyle = styled.div`
 
     ${ToolbarText} {
 
-      text-align: right;
+      text-align: left;
 
     }
 
@@ -7434,7 +7446,7 @@ const ResponsiveStyle = styled.div`
 
     ${Header} {
 
-      padding: 20px;
+      padding: 18px;
 
       border-radius: 18px;
 
@@ -7450,31 +7462,31 @@ const ResponsiveStyle = styled.div`
 
     ${TruckIcon} {
 
-      width: 52px;
+      width: 48px;
 
-      height: 52px;
+      height: 48px;
 
-      border-radius: 14px;
+      border-radius: 12px;
 
-      font-size: 26px;
+      font-size: 24px;
 
     }
 
 
     ${BackButton} {
 
-      width: 43px;
+      width: 42px;
 
-      height: 43px;
+      height: 42px;
 
-      font-size: 22px;
+      font-size: 20px;
 
     }
 
 
     ${PageHeading} {
 
-      font-size: 27px;
+      font-size: 24px;
 
     }
 
@@ -7495,34 +7507,34 @@ const ResponsiveStyle = styled.div`
 
     ${LorryRegistration} {
 
-      font-size: 18px;
+      font-size: 17px;
 
     }
 
 
     ${Hero} {
 
-      min-height: 420px;
+      min-height: auto;
 
-      padding: 35px 25px;
+      padding: 28px 20px;
 
-      border-radius: 22px;
+      border-radius: 20px;
 
     }
 
 
     ${HeroTitle} {
 
-      font-size: 31px;
+      font-size: 26px;
 
     }
 
 
     ${HeroDescription} {
 
-      font-size: 14px;
+      font-size: 13px;
 
-      line-height: 1.6;
+      line-height: 1.5;
 
     }
 
@@ -7556,7 +7568,7 @@ const ResponsiveStyle = styled.div`
 
     ${SectionTitle} {
 
-      font-size: 26px;
+      font-size: 22px;
 
     }
 
@@ -7564,16 +7576,65 @@ const ResponsiveStyle = styled.div`
     ${MetricsGrid} {
 
       grid-template-columns:
-        1fr;
+        repeat(2, minmax(0, 1fr));
+      gap: 10px;
 
+    }
+
+    ${MetricCard} {
+      min-height: 80px;
+      padding: 12px 10px;
+      gap: 10px;
+      border-radius: 14px;
+    }
+
+    ${MetricIcon} {
+      width: 38px;
+      height: 38px;
+      font-size: 20px;
+      border-radius: 10px;
+    }
+
+    ${MetricLabel} {
+      font-size: 9px;
+    }
+
+    ${MetricValue} {
+      font-size: 20px;
+      margin-top: 2px;
     }
 
 
     ${RoleTabs} {
 
       grid-template-columns:
-        1fr;
+        repeat(2, minmax(0, 1fr));
+      gap: 8px;
 
+    }
+
+    ${RoleTab} {
+      min-height: 52px;
+      padding: 8px 10px;
+      gap: 8px;
+      border-radius: 12px;
+    }
+
+    ${RoleTabIcon} {
+      width: 32px;
+      height: 32px;
+      font-size: 17px;
+      border-radius: 8px;
+    }
+
+    ${RoleTabText} {
+      font-size: 12px;
+    }
+
+    ${RoleTabCount} {
+      min-width: 24px;
+      height: 24px;
+      font-size: 11px;
     }
 
 
@@ -7587,14 +7648,15 @@ const ResponsiveStyle = styled.div`
 
     ${EmployeeCard} {
 
-      padding: 20px;
+      padding: 18px;
+      border-radius: 16px;
 
     }
 
 
     ${EmployeeName} {
 
-      font-size: 17px;
+      font-size: 16px;
 
     }
 
@@ -7618,18 +7680,22 @@ const ResponsiveStyle = styled.div`
 
     ${FormModal} {
 
-      padding: 23px;
+      padding: 20px;
 
-      border-radius: 20px;
+      border-radius: 18px;
+      width: 95%;
+      max-width: 500px;
 
     }
 
 
     ${DetailsModal} {
 
-      padding: 22px;
+      padding: 20px;
 
-      border-radius: 20px;
+      border-radius: 18px;
+      width: 95%;
+      max-width: 500px;
 
     }
 
@@ -7643,7 +7709,7 @@ const ResponsiveStyle = styled.div`
 
     ${ProfileName} {
 
-      font-size: 21px;
+      font-size: 20px;
 
     }
 
@@ -7699,18 +7765,18 @@ const ResponsiveStyle = styled.div`
 
     ${PageHeading} {
 
-      font-size: 23px;
+      font-size: 21px;
 
     }
 
 
     ${TruckIcon} {
 
-      width: 45px;
+      width: 42px;
 
-      height: 45px;
+      height: 42px;
 
-      font-size: 22px;
+      font-size: 20px;
 
     }
 
@@ -7721,28 +7787,30 @@ const ResponsiveStyle = styled.div`
 
       height: 38px;
 
+      font-size: 18px;
+
     }
 
 
     ${Hero} {
 
-      min-height: 440px;
+      min-height: auto;
 
-      padding: 30px 20px;
+      padding: 24px 16px;
 
     }
 
 
     ${HeroTitle} {
 
-      font-size: 28px;
+      font-size: 22px;
 
     }
 
 
     ${HeroRegistration} strong {
 
-      font-size: 14px;
+      font-size: 13px;
 
     }
 
@@ -7757,18 +7825,18 @@ const ResponsiveStyle = styled.div`
 
     ${RegistrationBannerNumber} {
 
-      font-size: 18px;
+      font-size: 16px;
 
     }
 
 
     ${ProfileAvatar} {
 
-      width: 60px;
+      width: 52px;
 
-      height: 60px;
+      height: 52px;
 
-      font-size: 27px;
+      font-size: 24px;
 
     }
 

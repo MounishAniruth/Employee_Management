@@ -7724,20 +7724,6 @@ const IdProofModalFooter = styled.div`
   background: #ffffff;
 `;
 
-const IdProofModalLink = styled.a`
-  display: inline-flex;
-  align-items: center;
-  gap: 6px;
-  color: #15803d;
-  font-size: 13px;
-  font-weight: 700;
-  text-decoration: none;
-
-  &:hover {
-    text-decoration: underline;
-  }
-`;
-
 const IdProofModalDoneBtn = styled.button`
   padding: 9px 20px;
   background: #15803d;

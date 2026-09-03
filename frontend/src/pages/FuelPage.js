@@ -5254,19 +5254,7 @@ const BillModalFooter = styled.div`
   background: #ffffff;
 `;
 
-const BillModalLink = styled.a`
-  display: inline-flex;
-  align-items: center;
-  gap: 6px;
-  color: #15803d;
-  font-size: 13px;
-  font-weight: 700;
-  text-decoration: none;
 
-  &:hover {
-    text-decoration: underline;
-  }
-`;
 
 const BillModalDoneBtn = styled.button`
   padding: 9px 20px;

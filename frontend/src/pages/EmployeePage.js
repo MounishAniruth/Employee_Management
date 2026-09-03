@@ -3768,8 +3768,16 @@ const EmployeePage = () => {
                     </button>
                   )}
                 </IdProofModalBody>
-                <IdProofModalFooter style={{ justifyContent: 'center' }}>
-                  <IdProofModalDoneBtn onClick={() => { setSelectedIdModal(null); setLightboxIndex(0); }} style={{ width: '100%' }}>
+                <IdProofModalFooter style={{ justifyContent: 'space-between' }}>
+                  <a 
+                    href={urls[lightboxIndex]} 
+                    target="_blank" 
+                    rel="noopener noreferrer"
+                    style={{ color: '#15803d', fontSize: '13px', fontWeight: 'bold', textDecoration: 'none' }}
+                  >
+                    ↗ Open Original
+                  </a>
+                  <IdProofModalDoneBtn onClick={() => { setSelectedIdModal(null); setLightboxIndex(0); }}>
                     Close Viewer
                   </IdProofModalDoneBtn>
                 </IdProofModalFooter>

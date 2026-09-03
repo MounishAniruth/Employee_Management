@@ -2389,8 +2389,16 @@ const FuelPage = () => {
                 }}
               />
             </BillModalBody>
-            <BillModalFooter style={{ justifyContent: 'center' }}>
-              <BillModalDoneBtn onClick={() => setSelectedBillModal(null)} style={{ width: '100%' }}>
+            <BillModalFooter style={{ justifyContent: 'space-between' }}>
+              <a 
+                href={selectedBillModal.bill_image_url} 
+                target="_blank" 
+                rel="noopener noreferrer"
+                style={{ color: '#15803d', fontSize: '13px', fontWeight: 'bold', textDecoration: 'none' }}
+              >
+                ↗ Open Original
+              </a>
+              <BillModalDoneBtn onClick={() => setSelectedBillModal(null)}>
                 Close Viewer
               </BillModalDoneBtn>
             </BillModalFooter>

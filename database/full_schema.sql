@@ -57,6 +57,7 @@ CREATE TABLE IF NOT EXISTS `employees` (
   `phone` varchar(30) NOT NULL,
   `role` enum('driver','driller','manager','worker') NOT NULL,
   `fixed_salary` decimal(10,2) NOT NULL,
+  `id_proof_url` varchar(500) DEFAULT NULL,
   `created_at` timestamp NULL DEFAULT CURRENT_TIMESTAMP,
   `updated_at` timestamp NULL DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP,
   PRIMARY KEY (`id`),

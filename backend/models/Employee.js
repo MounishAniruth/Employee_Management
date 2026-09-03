@@ -52,6 +52,7 @@ const Employee = {
         e.phone,
         e.role,
         e.fixed_salary,
+        e.id_proof_url,
         e.created_at,
         e.updated_at,
 
@@ -98,6 +99,7 @@ const Employee = {
         e.phone,
         e.role,
         e.fixed_salary,
+        e.id_proof_url,
         e.created_at,
         e.updated_at,
 
@@ -142,6 +144,7 @@ const Employee = {
         e.phone,
         e.role,
         e.fixed_salary,
+        e.id_proof_url,
         e.created_at,
         e.updated_at,
 
@@ -192,6 +195,7 @@ const Employee = {
         e.phone,
         e.role,
         e.fixed_salary,
+        e.id_proof_url,
         e.created_at,
         e.updated_at,
 
@@ -239,9 +243,10 @@ const Employee = {
         name,
         phone,
         role,
-        fixed_salary
+        fixed_salary,
+        id_proof_url
       )
-      VALUES (?, ?, ?, ?, ?, ?)
+      VALUES (?, ?, ?, ?, ?, ?, ?)
     `;
 
     const [result] =
@@ -253,7 +258,8 @@ const Employee = {
           data.name,
           data.phone,
           data.role,
-          data.fixed_salary
+          data.fixed_salary,
+          data.id_proof_url || null
         ]
       );
 
@@ -277,7 +283,8 @@ const Employee = {
         name = ?,
         phone = ?,
         role = ?,
-        fixed_salary = ?
+        fixed_salary = ?,
+        id_proof_url = COALESCE(?, id_proof_url)
 
       WHERE id = ?
     `;
@@ -290,6 +297,7 @@ const Employee = {
           data.phone,
           data.role,
           data.fixed_salary,
+          data.id_proof_url,
           id
         ]
       );

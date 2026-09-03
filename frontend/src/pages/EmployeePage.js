@@ -166,6 +166,15 @@ const EmployeePage = () => {
 
 
   // ===================================================
+  // ID PROOF
+  // ===================================================
+
+  const [idProofFile, setIdProofFile] = useState(null);
+  const [idProofPreview, setIdProofPreview] = useState(null);
+  const [selectedIdModal, setSelectedIdModal] = useState(null);
+
+
+  // ===================================================
   // EXPENSE
   // ===================================================
 
@@ -410,6 +419,35 @@ const EmployeePage = () => {
       difference + 1
     );
 
+  };
+
+
+  // ===================================================
+  // ID PROOF HANDLERS
+  // ===================================================
+
+  const handleIdProofChange = (e) => {
+    const file = e.target.files[0];
+    if (file) {
+      if (!file.type.startsWith("image/")) {
+        alert("Please upload a valid image file.");
+        return;
+      }
+      if (file.size > 10 * 1024 * 1024) {
+        alert("File size must be less than 10MB.");
+        return;
+      }
+      setIdProofFile(file);
+      setIdProofPreview(URL.createObjectURL(file));
+    }
+  };
+
+  const handleRemoveIdProof = () => {
+    setIdProofFile(null);
+    if (idProofPreview) {
+      URL.revokeObjectURL(idProofPreview);
+      setIdProofPreview(null);
+    }
   };
 
 
@@ -927,30 +965,24 @@ const EmployeePage = () => {
 
         setLoading(true);
 
+        const formData = new FormData();
+        formData.append("lorry_id", Number(id));
+        formData.append("name", employeeData.name.trim());
+        formData.append("phone", employeeData.phone.trim());
+        formData.append("role", employeeData.role);
+        formData.append("fixed_salary", Number(employeeData.salary || 0));
+
+        if (idProofFile) {
+          formData.append("idProof", idProofFile);
+        }
 
         await api.post(
           "/employee/add",
+          formData,
           {
-            lorry_id:
-              Number(id),
-
-            user_id:
-              null,
-
-            name:
-              employeeData.name.trim(),
-
-            phone:
-              employeeData.phone.trim(),
-
-            role:
-              employeeData.role,
-
-            fixed_salary:
-              Number(
-                employeeData.salary ||
-                0
-              )
+            headers: {
+              "Content-Type": "multipart/form-data"
+            }
           }
         );
 
@@ -971,6 +1003,8 @@ const EmployeePage = () => {
           role: selectedRole,
           salary: ""
         });
+        
+        handleRemoveIdProof();
 
 
         await fetchEmployeesByRole(
@@ -2161,6 +2195,15 @@ const EmployeePage = () => {
                         </span>
                       </ViewButton>
 
+                      {employee.id_proof_url && (
+                        <ViewIdButton
+                          onClick={() => setSelectedIdModal(employee)}
+                          title="View ID Proof"
+                        >
+                          🪪 ID Proof
+                        </ViewIdButton>
+                      )}
+
 
                       <ExpenseButton
                         onClick={() =>
@@ -2925,6 +2968,65 @@ const EmployeePage = () => {
 
 
               {/* =====================================
+                  ID PROOF UPLOAD
+              ===================================== */}
+
+              <FormGroup>
+                <IdProofUploadCard>
+                  <IdProofUploadHeader>
+                    <IdProofUploadTitle>
+                      📸 Upload ID Proof
+                    </IdProofUploadTitle>
+                    <IdProofUploadSubtitle>
+                      Aadhar Card, Driving License, etc. (Optional)
+                    </IdProofUploadSubtitle>
+                  </IdProofUploadHeader>
+
+                  {!idProofPreview ? (
+                    <UploadDropzone>
+                      <UploadTrigger>
+                        <UploadIcon>📷</UploadIcon>
+                        <UploadText>
+                          Tap to <strong>Capture</strong> or <strong>Upload</strong>
+                        </UploadText>
+                        <UploadHint>
+                          Max size: 10MB
+                        </UploadHint>
+                        <input
+                          type="file"
+                          accept="image/*"
+                          capture="environment"
+                          style={{ display: "none" }}
+                          onChange={handleIdProofChange}
+                        />
+                      </UploadTrigger>
+                    </UploadDropzone>
+                  ) : (
+                    <IdProofPreviewContainer>
+                      <IdProofPreviewImage
+                        src={idProofPreview}
+                        alt="ID Proof Preview"
+                      />
+                      <IdProofPreviewInfo>
+                        <IdProofFileName>
+                          {idProofFile?.name || "id_proof.jpg"}
+                        </IdProofFileName>
+                        <IdProofFileSize>
+                          {idProofFile?.size
+                            ? (idProofFile.size / 1024 / 1024).toFixed(2) + " MB"
+                            : ""}
+                        </IdProofFileSize>
+                        <RemoveIdProofButton type="button" onClick={handleRemoveIdProof}>
+                          Remove / Retake
+                        </RemoveIdProofButton>
+                      </IdProofPreviewInfo>
+                    </IdProofPreviewContainer>
+                  )}
+                </IdProofUploadCard>
+              </FormGroup>
+
+
+              {/* =====================================
                   ACTIONS
               ===================================== */}
 
@@ -3584,6 +3686,46 @@ const EmployeePage = () => {
             </Overlay>
 
           )}
+
+
+        {/* =================================================
+            ID PROOF PREVIEW MODAL
+        ================================================= */}
+        {selectedIdModal && (
+          <IdProofModalOverlay onClick={() => setSelectedIdModal(null)}>
+            <IdProofModalContent onClick={(e) => e.stopPropagation()}>
+              <IdProofModalHeader>
+                <div>
+                  <IdProofModalTitle>Employee ID Proof</IdProofModalTitle>
+                  <IdProofModalMeta>
+                    {selectedIdModal.name} • {selectedIdModal.role.toUpperCase()}
+                  </IdProofModalMeta>
+                </div>
+                <IdProofModalClose onClick={() => setSelectedIdModal(null)}>
+                  ✕
+                </IdProofModalClose>
+              </IdProofModalHeader>
+              <IdProofModalBody>
+                <IdProofModalImg
+                  src={selectedIdModal.id_proof_url}
+                  alt={`ID proof for ${selectedIdModal.name}`}
+                />
+              </IdProofModalBody>
+              <IdProofModalFooter>
+                <IdProofModalLink
+                  href={selectedIdModal.id_proof_url}
+                  target="_blank"
+                  rel="noopener noreferrer"
+                >
+                  Open Original Image ↗
+                </IdProofModalLink>
+                <IdProofModalDoneBtn onClick={() => setSelectedIdModal(null)}>
+                  Close
+                </IdProofModalDoneBtn>
+              </IdProofModalFooter>
+            </IdProofModalContent>
+          </IdProofModalOverlay>
+        )}
 
 
       </Page>
@@ -7262,6 +7404,304 @@ const MiniCurrentBadge = styled.div`
 
   font-weight: 900;
 
+`;
+
+
+// =====================================================
+// ID PROOF STYLES
+// =====================================================
+
+const IdProofUploadCard = styled.div`
+  background: #f8faf9;
+  border: 1.5px dashed #cbd5e1;
+  border-radius: 14px;
+  padding: 16px 20px;
+  transition: all 0.2s ease;
+
+  &:hover {
+    border-color: #16a34a;
+    background: #f0fdf4;
+  }
+`;
+
+const IdProofUploadHeader = styled.div`
+  margin-bottom: 12px;
+`;
+
+const IdProofUploadTitle = styled.div`
+  font-size: 13px;
+  font-weight: 800;
+  color: #1e293b;
+  display: flex;
+  align-items: center;
+  gap: 8px;
+`;
+
+const IdProofUploadSubtitle = styled.div`
+  font-size: 11px;
+  color: #64748b;
+  margin-top: 2px;
+`;
+
+const UploadDropzone = styled.div`
+  width: 100%;
+`;
+
+const UploadTrigger = styled.label`
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  gap: 6px;
+  padding: 20px 16px;
+  background: #ffffff;
+  border: 1px solid #e2e8f0;
+  border-radius: 12px;
+  cursor: pointer;
+  transition: all 0.2s ease;
+
+  &:hover {
+    background: #f0fdf4;
+    border-color: #86efac;
+    transform: translateY(-1px);
+  }
+`;
+
+const UploadIcon = styled.div`
+  font-size: 28px;
+`;
+
+const UploadText = styled.div`
+  font-size: 13px;
+  color: #334155;
+
+  strong {
+    color: #15803d;
+  }
+`;
+
+const UploadHint = styled.div`
+  font-size: 11px;
+  color: #94a3b8;
+`;
+
+const IdProofPreviewContainer = styled.div`
+  display: flex;
+  align-items: center;
+  gap: 16px;
+  background: #ffffff;
+  padding: 12px 16px;
+  border-radius: 12px;
+  border: 1px solid #bbf7d0;
+`;
+
+const IdProofPreviewImage = styled.img`
+  width: 68px;
+  height: 68px;
+  object-fit: cover;
+  border-radius: 10px;
+  border: 1px solid #e2e8f0;
+  box-shadow: 0 4px 10px rgba(0, 0, 0, 0.06);
+`;
+
+const IdProofPreviewInfo = styled.div`
+  flex: 1;
+  display: flex;
+  flex-direction: column;
+  gap: 4px;
+`;
+
+const IdProofFileName = styled.div`
+  font-size: 13px;
+  font-weight: 700;
+  color: #0f172a;
+  word-break: break-all;
+`;
+
+const IdProofFileSize = styled.div`
+  font-size: 11px;
+  color: #64748b;
+`;
+
+const RemoveIdProofButton = styled.button`
+  align-self: flex-start;
+  margin-top: 4px;
+  padding: 4px 10px;
+  background: #fef2f2;
+  color: #dc2626;
+  border: 1px solid #fecaca;
+  border-radius: 6px;
+  font-size: 11px;
+  font-weight: 700;
+  cursor: pointer;
+  transition: all 0.15s ease;
+
+  &:hover {
+    background: #fee2e2;
+  }
+`;
+
+const ViewIdButton = styled.button`
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  gap: 6px;
+  padding: 10px 16px;
+  border: 1px solid #bbf7d0;
+  border-radius: 12px;
+  background: #f0fdf4;
+  color: #15803d;
+  font-size: 13px;
+  font-weight: 700;
+  cursor: pointer;
+  transition: all 0.2s ease;
+  width: 100%;
+
+  &:hover {
+    background: #dcfce7;
+    border-color: #86efac;
+    transform: translateY(-2px);
+    box-shadow: 0 4px 12px rgba(22, 163, 74, 0.1);
+  }
+`;
+
+const IdProofModalOverlay = styled.div`
+  position: fixed;
+  inset: 0;
+  background: rgba(15, 23, 42, 0.75);
+  backdrop-filter: blur(4px);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  z-index: 9999;
+  padding: 20px;
+`;
+
+const IdProofModalContent = styled.div`
+  background: #ffffff;
+  border-radius: 18px;
+  max-width: 600px;
+  width: 100%;
+  max-height: 90vh;
+  display: flex;
+  flex-direction: column;
+  box-shadow: 0 25px 50px -12px rgba(0, 0, 0, 0.25);
+  overflow: hidden;
+  animation: modalPop 0.2s cubic-bezier(0.16, 1, 0.3, 1);
+
+  @keyframes modalPop {
+    from {
+      opacity: 0;
+      transform: scale(0.95);
+    }
+    to {
+      opacity: 1;
+      transform: scale(1);
+    }
+  }
+`;
+
+const IdProofModalHeader = styled.div`
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  padding: 18px 24px;
+  border-bottom: 1px solid #eef2f6;
+  background: #fcfdfd;
+`;
+
+const IdProofModalTitle = styled.h3`
+  margin: 0;
+  font-size: 16px;
+  font-weight: 800;
+  color: #0f172a;
+`;
+
+const IdProofModalMeta = styled.div`
+  font-size: 12px;
+  color: #64748b;
+  margin-top: 3px;
+  font-weight: 600;
+`;
+
+const IdProofModalClose = styled.button`
+  background: #f1f5f9;
+  border: none;
+  border-radius: 50%;
+  width: 32px;
+  height: 32px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  color: #475569;
+  font-size: 14px;
+  font-weight: 700;
+  cursor: pointer;
+  transition: all 0.15s ease;
+
+  &:hover {
+    background: #e2e8f0;
+    color: #0f172a;
+  }
+`;
+
+const IdProofModalBody = styled.div`
+  padding: 20px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  background: #0f172a08;
+  overflow-y: auto;
+  max-height: 65vh;
+`;
+
+const IdProofModalImg = styled.img`
+  max-width: 100%;
+  max-height: 60vh;
+  object-fit: contain;
+  border-radius: 12px;
+  box-shadow: 0 10px 25px rgba(0, 0, 0, 0.1);
+  border: 1px solid #e2e8f0;
+  background: #ffffff;
+`;
+
+const IdProofModalFooter = styled.div`
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  padding: 16px 24px;
+  border-top: 1px solid #eef2f6;
+  background: #ffffff;
+`;
+
+const IdProofModalLink = styled.a`
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+  color: #15803d;
+  font-size: 13px;
+  font-weight: 700;
+  text-decoration: none;
+
+  &:hover {
+    text-decoration: underline;
+  }
+`;
+
+const IdProofModalDoneBtn = styled.button`
+  padding: 9px 20px;
+  background: #15803d;
+  color: #ffffff;
+  border: none;
+  border-radius: 10px;
+  font-size: 13px;
+  font-weight: 700;
+  cursor: pointer;
+  transition: all 0.15s ease;
+
+  &:hover {
+    background: #166534;
+  }
 `;
 
 

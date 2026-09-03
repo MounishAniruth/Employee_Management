@@ -10,6 +10,24 @@ const Salary = require("../models/Salary");
 const authMiddleware =
   require("../middleware/authMiddleware");
 
+const multer = require("multer");
+const { uploadToBunny, deleteFromBunny } = require("../utils/bunnyUpload");
+
+// Set up multer memory storage for employee ID proofs
+const storage = multer.memoryStorage();
+const upload = multer({
+  storage,
+  limits: {
+    fileSize: 10 * 1024 * 1024, // 10 MB limit
+  },
+  fileFilter: (req, file, cb) => {
+    if (file.mimetype.startsWith("image/")) {
+      cb(null, true);
+    } else {
+      cb(new Error("Only images are allowed"));
+    }
+  },
+});
 
 // =====================================================
 // GET EMPLOYEES BY ROLE AND LORRY
@@ -238,6 +256,7 @@ router.get(
 router.post(
   "/add",
   authMiddleware,
+  upload.single("idProof"),
   async (req, res) => {
 
     try {
@@ -306,6 +325,22 @@ router.post(
 
 
       // ================================================
+      // UPLOAD TO BUNNY STORAGE (ID PROOF)
+      // ================================================
+
+      let id_proof_url = null;
+
+      if (req.file) {
+        id_proof_url = await uploadToBunny(
+          req.file.buffer,
+          req.file.originalname,
+          req.file.mimetype,
+          "id-proofs"
+        );
+      }
+
+
+      // ================================================
       // ADD EMPLOYEE
       // ================================================
 
@@ -329,7 +364,9 @@ router.post(
           role,
 
           fixed_salary:
-            Number(fixed_salary)
+            Number(fixed_salary),
+            
+          id_proof_url
 
         });
 
@@ -773,6 +810,7 @@ router.put(
 router.put(
   "/:id",
   authMiddleware,
+  upload.single("idProof"),
   async (req, res) => {
 
     try {
@@ -867,6 +905,29 @@ router.put(
 
 
       // ================================================
+      // UPLOAD TO BUNNY STORAGE (ID PROOF)
+      // ================================================
+
+      let id_proof_url = employee.id_proof_url; // Default to existing
+
+      if (req.file) {
+        
+        // Upload new ID proof
+        id_proof_url = await uploadToBunny(
+          req.file.buffer,
+          req.file.originalname,
+          req.file.mimetype,
+          "id-proofs"
+        );
+        
+        // Optionally delete old one? 
+        // if (employee.id_proof_url) {
+        //   await deleteFromBunny(employee.id_proof_url).catch(console.error);
+        // }
+      }
+
+
+      // ================================================
       // UPDATE EMPLOYEE
       // ================================================
 
@@ -884,7 +945,9 @@ router.put(
             role,
 
             fixed_salary:
-              Number(fixed_salary)
+              Number(fixed_salary),
+              
+            id_proof_url
 
           }
         );

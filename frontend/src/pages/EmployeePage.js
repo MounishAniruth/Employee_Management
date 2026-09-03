@@ -3749,6 +3749,7 @@ const EmployeePage = () => {
                   <IdProofModalImg
                     src={urls[lightboxIndex]}
                     alt={`ID proof for ${selectedIdModal.name} - ${lightboxIndex + 1}`}
+                    referrerPolicy="no-referrer"
                     style={{ maxHeight: '75vh', cursor: 'zoom-in' }}
                     onClick={(e) => {
                       if (!document.fullscreenElement) {

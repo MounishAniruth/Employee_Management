@@ -2378,6 +2378,7 @@ const FuelPage = () => {
               <BillModalImg
                 src={selectedBillModal.bill_image_url}
                 alt={`Fuel bill receipt for ${selectedBillModal.bunk_name}`}
+                referrerPolicy="no-referrer"
                 style={{ maxHeight: '75vh', cursor: 'zoom-in' }}
                 onClick={(e) => {
                   if (!document.fullscreenElement) {

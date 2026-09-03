@@ -4061,6 +4061,24 @@ const HeaderRight = styled.div`
 `;
 
 
+const FilterRow = styled.div`
+  display: flex;
+  gap: 12px;
+  align-items: center;
+`;
+
+// =====================================================
+// HELPERS
+// =====================================================
+const ensureHttps = (url) => {
+  if (!url) return '';
+  const trimmedUrl = url.trim();
+  if (trimmedUrl.startsWith('http://')) return trimmedUrl.replace('http://', 'https://');
+  if (trimmedUrl.startsWith('//')) return 'https:' + trimmedUrl;
+  if (!trimmedUrl.startsWith('http')) return 'https://' + trimmedUrl;
+  return trimmedUrl;
+};
+
 // =====================================================
 // LORRY INFO
 // =====================================================

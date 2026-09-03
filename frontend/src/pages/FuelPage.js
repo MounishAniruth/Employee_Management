@@ -2379,18 +2379,19 @@ const FuelPage = () => {
               <BillModalImg
                 src={selectedBillModal.bill_image_url}
                 alt={`Fuel bill receipt for ${selectedBillModal.bunk_name}`}
+                style={{ maxHeight: '75vh', cursor: 'zoom-in' }}
+                onClick={(e) => {
+                  if (!document.fullscreenElement) {
+                    e.target.requestFullscreen().catch(err => console.log(err));
+                  } else {
+                    document.exitFullscreen();
+                  }
+                }}
               />
             </BillModalBody>
-            <BillModalFooter>
-              <BillModalLink
-                href={selectedBillModal.bill_image_url}
-                target="_blank"
-                rel="noopener noreferrer"
-              >
-                Open Original Image ↗
-              </BillModalLink>
-              <BillModalDoneBtn onClick={() => setSelectedBillModal(null)}>
-                Close
+            <BillModalFooter style={{ justifyContent: 'center' }}>
+              <BillModalDoneBtn onClick={() => setSelectedBillModal(null)} style={{ width: '100%' }}>
+                Close Viewer
               </BillModalDoneBtn>
             </BillModalFooter>
           </BillModalContent>

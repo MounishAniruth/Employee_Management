@@ -52,7 +52,7 @@ const Employee = {
         e.phone,
         e.role,
         e.fixed_salary,
-        e.id_proof_url,
+        e.id_proof_urls,
         e.created_at,
         e.updated_at,
 
@@ -99,7 +99,7 @@ const Employee = {
         e.phone,
         e.role,
         e.fixed_salary,
-        e.id_proof_url,
+        e.id_proof_urls,
         e.created_at,
         e.updated_at,
 
@@ -144,7 +144,7 @@ const Employee = {
         e.phone,
         e.role,
         e.fixed_salary,
-        e.id_proof_url,
+        e.id_proof_urls,
         e.created_at,
         e.updated_at,
 
@@ -195,7 +195,7 @@ const Employee = {
         e.phone,
         e.role,
         e.fixed_salary,
-        e.id_proof_url,
+        e.id_proof_urls,
         e.created_at,
         e.updated_at,
 
@@ -244,7 +244,7 @@ const Employee = {
         phone,
         role,
         fixed_salary,
-        id_proof_url
+        id_proof_urls
       )
       VALUES (?, ?, ?, ?, ?, ?, ?)
     `;
@@ -259,7 +259,7 @@ const Employee = {
           data.phone,
           data.role,
           data.fixed_salary,
-          data.id_proof_url || null
+          data.id_proof_urls ? JSON.stringify(data.id_proof_urls) : null
         ]
       );
 
@@ -284,7 +284,7 @@ const Employee = {
         phone = ?,
         role = ?,
         fixed_salary = ?,
-        id_proof_url = COALESCE(?, id_proof_url)
+        id_proof_urls = COALESCE(?, id_proof_urls)
 
       WHERE id = ?
     `;
@@ -297,7 +297,7 @@ const Employee = {
           data.phone,
           data.role,
           data.fixed_salary,
-          data.id_proof_url,
+          data.id_proof_urls ? JSON.stringify(data.id_proof_urls) : null,
           id
         ]
       );

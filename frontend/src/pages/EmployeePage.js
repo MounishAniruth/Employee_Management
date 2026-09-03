@@ -169,9 +169,12 @@ const EmployeePage = () => {
   // ID PROOF
   // ===================================================
 
-  const [idProofFile, setIdProofFile] = useState(null);
-  const [idProofPreview, setIdProofPreview] = useState(null);
+  const [idProofFiles, setIdProofFiles] = useState([]);
+  const [idProofPreviews, setIdProofPreviews] = useState([]);
   const [selectedIdModal, setSelectedIdModal] = useState(null);
+  
+  // Lightbox Viewer State
+  const [lightboxIndex, setLightboxIndex] = useState(0);
 
 
   // ===================================================
@@ -427,27 +430,42 @@ const EmployeePage = () => {
   // ===================================================
 
   const handleIdProofChange = (e) => {
-    const file = e.target.files[0];
-    if (file) {
+    const files = Array.from(e.target.files);
+    if (!files.length) return;
+
+    if (idProofFiles.length + files.length > 5) {
+      alert("You can upload a maximum of 5 ID proofs.");
+      return;
+    }
+
+    const validFiles = [];
+    const newPreviews = [];
+
+    files.forEach((file) => {
       if (!file.type.startsWith("image/")) {
-        alert("Please upload a valid image file.");
+        alert(`${file.name} is not a valid image file.`);
         return;
       }
       if (file.size > 10 * 1024 * 1024) {
-        alert("File size must be less than 10MB.");
+        alert(`${file.name} is larger than 10MB.`);
         return;
       }
-      setIdProofFile(file);
-      setIdProofPreview(URL.createObjectURL(file));
-    }
+      validFiles.push(file);
+      newPreviews.push(URL.createObjectURL(file));
+    });
+
+    setIdProofFiles([...validFiles]);
+    setIdProofPreviews([...newPreviews]);
   };
 
-  const handleRemoveIdProof = () => {
-    setIdProofFile(null);
-    if (idProofPreview) {
-      URL.revokeObjectURL(idProofPreview);
-      setIdProofPreview(null);
-    }
+  const handleRemoveIdProof = (index) => {
+    setIdProofFiles((prev) => prev.filter((_, i) => i !== index));
+    setIdProofPreviews((prev) => {
+      const newPreviews = [...prev];
+      URL.revokeObjectURL(newPreviews[index]);
+      newPreviews.splice(index, 1);
+      return newPreviews;
+    });
   };
 
 
@@ -972,8 +990,10 @@ const EmployeePage = () => {
         formData.append("role", employeeData.role);
         formData.append("fixed_salary", Number(employeeData.salary || 0));
 
-        if (idProofFile) {
-          formData.append("idProof", idProofFile);
+        if (idProofFiles.length > 0) {
+          idProofFiles.forEach(file => {
+            formData.append("idProofs", file);
+          });
         }
 
         await api.post(
@@ -1003,9 +1023,8 @@ const EmployeePage = () => {
           role: selectedRole,
           salary: ""
         });
-        
-        handleRemoveIdProof();
-
+        setIdProofFiles([]);
+        setIdProofPreviews([]);
 
         await fetchEmployeesByRole(
           selectedRole
@@ -2195,10 +2214,10 @@ const EmployeePage = () => {
                         </span>
                       </ViewButton>
 
-                      {employee.id_proof_url && (
+                      {employee.id_proof_urls && (
                         <ViewIdButton
                           onClick={() => setSelectedIdModal(employee)}
-                          title="View ID Proof"
+                          title="View ID Proofs"
                         >
                           🪪 ID Proof
                         </ViewIdButton>
@@ -2975,14 +2994,37 @@ const EmployeePage = () => {
                 <IdProofUploadCard>
                   <IdProofUploadHeader>
                     <IdProofUploadTitle>
-                      📸 Upload ID Proof
+                      📸 Upload ID Proofs
                     </IdProofUploadTitle>
                     <IdProofUploadSubtitle>
-                      Aadhar Card, Driving License, etc. (Optional)
+                      Aadhar Card, Driving License (Max 5 images)
                     </IdProofUploadSubtitle>
                   </IdProofUploadHeader>
 
-                  {!idProofPreview ? (
+                  {idProofPreviews.length > 0 && (
+                    <div style={{ display: 'flex', flexDirection: 'column', gap: '10px', marginBottom: '16px' }}>
+                      {idProofPreviews.map((previewUrl, idx) => (
+                        <IdProofPreviewContainer key={idx}>
+                          <IdProofPreviewImage src={previewUrl} alt={`Preview ${idx + 1}`} />
+                          <IdProofPreviewInfo>
+                            <IdProofFileName>
+                              {idProofFiles[idx]?.name || `Image ${idx + 1}`}
+                            </IdProofFileName>
+                            <IdProofFileSize>
+                              {idProofFiles[idx]?.size
+                                ? (idProofFiles[idx].size / 1024 / 1024).toFixed(2) + " MB"
+                                : ""}
+                            </IdProofFileSize>
+                            <RemoveIdProofButton type="button" onClick={() => handleRemoveIdProof(idx)}>
+                              Remove
+                            </RemoveIdProofButton>
+                          </IdProofPreviewInfo>
+                        </IdProofPreviewContainer>
+                      ))}
+                    </div>
+                  )}
+
+                  {idProofPreviews.length < 5 && (
                     <UploadDropzone>
                       <UploadTrigger>
                         <UploadIcon>📷</UploadIcon>
@@ -2990,37 +3032,18 @@ const EmployeePage = () => {
                           Tap to <strong>Capture</strong> or <strong>Upload</strong>
                         </UploadText>
                         <UploadHint>
-                          Max size: 10MB
+                          Max size: 10MB per image
                         </UploadHint>
                         <input
                           type="file"
                           accept="image/*"
                           capture="environment"
+                          multiple
                           style={{ display: "none" }}
                           onChange={handleIdProofChange}
                         />
                       </UploadTrigger>
                     </UploadDropzone>
-                  ) : (
-                    <IdProofPreviewContainer>
-                      <IdProofPreviewImage
-                        src={idProofPreview}
-                        alt="ID Proof Preview"
-                      />
-                      <IdProofPreviewInfo>
-                        <IdProofFileName>
-                          {idProofFile?.name || "id_proof.jpg"}
-                        </IdProofFileName>
-                        <IdProofFileSize>
-                          {idProofFile?.size
-                            ? (idProofFile.size / 1024 / 1024).toFixed(2) + " MB"
-                            : ""}
-                        </IdProofFileSize>
-                        <RemoveIdProofButton type="button" onClick={handleRemoveIdProof}>
-                          Remove / Retake
-                        </RemoveIdProofButton>
-                      </IdProofPreviewInfo>
-                    </IdProofPreviewContainer>
                   )}
                 </IdProofUploadCard>
               </FormGroup>
@@ -3689,43 +3712,71 @@ const EmployeePage = () => {
 
 
         {/* =================================================
-            ID PROOF PREVIEW MODAL
+            ID PROOF PREVIEW MODAL (LIGHTBOX)
         ================================================= */}
-        {selectedIdModal && (
-          <IdProofModalOverlay onClick={() => setSelectedIdModal(null)}>
-            <IdProofModalContent onClick={(e) => e.stopPropagation()}>
-              <IdProofModalHeader>
-                <div>
-                  <IdProofModalTitle>Employee ID Proof</IdProofModalTitle>
-                  <IdProofModalMeta>
-                    {selectedIdModal.name} • {selectedIdModal.role.toUpperCase()}
-                  </IdProofModalMeta>
-                </div>
-                <IdProofModalClose onClick={() => setSelectedIdModal(null)}>
-                  ✕
-                </IdProofModalClose>
-              </IdProofModalHeader>
-              <IdProofModalBody>
-                <IdProofModalImg
-                  src={selectedIdModal.id_proof_url}
-                  alt={`ID proof for ${selectedIdModal.name}`}
-                />
-              </IdProofModalBody>
-              <IdProofModalFooter>
-                <IdProofModalLink
-                  href={selectedIdModal.id_proof_url}
-                  target="_blank"
-                  rel="noopener noreferrer"
-                >
-                  Open Original Image ↗
-                </IdProofModalLink>
-                <IdProofModalDoneBtn onClick={() => setSelectedIdModal(null)}>
-                  Close
-                </IdProofModalDoneBtn>
-              </IdProofModalFooter>
-            </IdProofModalContent>
-          </IdProofModalOverlay>
-        )}
+        {selectedIdModal && (() => {
+          let urls = [];
+          if (selectedIdModal.id_proof_urls) {
+            urls = Array.isArray(selectedIdModal.id_proof_urls) 
+              ? selectedIdModal.id_proof_urls 
+              : (() => { try { return JSON.parse(selectedIdModal.id_proof_urls); } catch(e) { return []; }})();
+          }
+
+          if (urls.length === 0) return null;
+
+          return (
+            <IdProofModalOverlay onClick={() => { setSelectedIdModal(null); setLightboxIndex(0); }}>
+              <IdProofModalContent onClick={(e) => e.stopPropagation()}>
+                <IdProofModalHeader>
+                  <div>
+                    <IdProofModalTitle>Employee ID Proofs ({lightboxIndex + 1} of {urls.length})</IdProofModalTitle>
+                    <IdProofModalMeta>
+                      {selectedIdModal.name} • {selectedIdModal.role.toUpperCase()}
+                    </IdProofModalMeta>
+                  </div>
+                  <IdProofModalClose onClick={() => { setSelectedIdModal(null); setLightboxIndex(0); }}>
+                    ✕
+                  </IdProofModalClose>
+                </IdProofModalHeader>
+                <IdProofModalBody style={{ position: 'relative' }}>
+                  {urls.length > 1 && (
+                    <button 
+                      onClick={(e) => { e.stopPropagation(); setLightboxIndex(prev => (prev === 0 ? urls.length - 1 : prev - 1)); }}
+                      style={{ position: 'absolute', left: 10, top: '50%', transform: 'translateY(-50%)', background: 'rgba(0,0,0,0.5)', color: 'white', border: 'none', borderRadius: '50%', width: 40, height: 40, cursor: 'pointer', fontSize: 18 }}
+                    >
+                      ❮
+                    </button>
+                  )}
+                  <IdProofModalImg
+                    src={urls[lightboxIndex]}
+                    alt={`ID proof for ${selectedIdModal.name} - ${lightboxIndex + 1}`}
+                    style={{ maxHeight: '75vh', cursor: 'zoom-in' }}
+                    onClick={(e) => {
+                      if (!document.fullscreenElement) {
+                        e.target.requestFullscreen().catch(err => console.log(err));
+                      } else {
+                        document.exitFullscreen();
+                      }
+                    }}
+                  />
+                  {urls.length > 1 && (
+                    <button 
+                      onClick={(e) => { e.stopPropagation(); setLightboxIndex(prev => (prev === urls.length - 1 ? 0 : prev + 1)); }}
+                      style={{ position: 'absolute', right: 10, top: '50%', transform: 'translateY(-50%)', background: 'rgba(0,0,0,0.5)', color: 'white', border: 'none', borderRadius: '50%', width: 40, height: 40, cursor: 'pointer', fontSize: 18 }}
+                    >
+                      ❯
+                    </button>
+                  )}
+                </IdProofModalBody>
+                <IdProofModalFooter style={{ justifyContent: 'center' }}>
+                  <IdProofModalDoneBtn onClick={() => { setSelectedIdModal(null); setLightboxIndex(0); }} style={{ width: '100%' }}>
+                    Close Viewer
+                  </IdProofModalDoneBtn>
+                </IdProofModalFooter>
+              </IdProofModalContent>
+            </IdProofModalOverlay>
+          );
+        })()}
 
 
       </Page>

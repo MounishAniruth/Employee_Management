@@ -256,7 +256,7 @@ router.get(
 router.post(
   "/add",
   authMiddleware,
-  upload.single("idProof"),
+  upload.array("idProofs", 5),
   async (req, res) => {
 
     try {
@@ -328,15 +328,18 @@ router.post(
       // UPLOAD TO BUNNY STORAGE (ID PROOF)
       // ================================================
 
-      let id_proof_url = null;
+      let id_proof_urls = [];
 
-      if (req.file) {
-        id_proof_url = await uploadToBunny(
-          req.file.buffer,
-          req.file.originalname,
-          req.file.mimetype,
-          "id-proofs"
-        );
+      if (req.files && req.files.length > 0) {
+        for (const file of req.files) {
+          const url = await uploadToBunny(
+            file.buffer,
+            file.originalname,
+            file.mimetype,
+            "id-proofs"
+          );
+          id_proof_urls.push(url);
+        }
       }
 
 
@@ -366,7 +369,7 @@ router.post(
           fixed_salary:
             Number(fixed_salary),
             
-          id_proof_url
+          id_proof_urls
 
         });
 
@@ -810,7 +813,7 @@ router.put(
 router.put(
   "/:id",
   authMiddleware,
-  upload.single("idProof"),
+  upload.array("idProofs", 5),
   async (req, res) => {
 
     try {
@@ -908,22 +911,37 @@ router.put(
       // UPLOAD TO BUNNY STORAGE (ID PROOF)
       // ================================================
 
-      let id_proof_url = employee.id_proof_url; // Default to existing
+      let existingIdProofs = [];
+      if (req.body.existingIdProofs) {
+        try {
+          existingIdProofs = JSON.parse(req.body.existingIdProofs);
+        } catch (e) {
+          existingIdProofs = Array.isArray(req.body.existingIdProofs) 
+            ? req.body.existingIdProofs 
+            : [req.body.existingIdProofs];
+        }
+      } else {
+        // If not sent at all (maybe frontend didn't include the field), assume we keep all existing.
+        // Wait, if frontend sends [] it will be "[]" which parses to [].
+        // If frontend sends nothing, it's undefined. So we assume they didn't touch it.
+        // If they want to clear it, they send "[]".
+        if (req.body.existingIdProofs === undefined) {
+          existingIdProofs = employee.id_proof_urls || [];
+        }
+      }
 
-      if (req.file) {
-        
-        // Upload new ID proof
-        id_proof_url = await uploadToBunny(
-          req.file.buffer,
-          req.file.originalname,
-          req.file.mimetype,
-          "id-proofs"
-        );
-        
-        // Optionally delete old one? 
-        // if (employee.id_proof_url) {
-        //   await deleteFromBunny(employee.id_proof_url).catch(console.error);
-        // }
+      let id_proof_urls = [...existingIdProofs];
+
+      if (req.files && req.files.length > 0) {
+        for (const file of req.files) {
+          const url = await uploadToBunny(
+            file.buffer,
+            file.originalname,
+            file.mimetype,
+            "id-proofs"
+          );
+          id_proof_urls.push(url);
+        }
       }
 
 
@@ -947,7 +965,7 @@ router.put(
             fixed_salary:
               Number(fixed_salary),
               
-            id_proof_url
+            id_proof_urls
 
           }
         );

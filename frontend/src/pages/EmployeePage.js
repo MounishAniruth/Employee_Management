@@ -4061,11 +4061,6 @@ const HeaderRight = styled.div`
 `;
 
 
-const FilterRow = styled.div`
-  display: flex;
-  gap: 12px;
-  align-items: center;
-`;
 
 // =====================================================
 // HELPERS

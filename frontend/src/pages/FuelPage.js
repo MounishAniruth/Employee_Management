@@ -2376,7 +2376,7 @@ const FuelPage = () => {
             </BillModalHeader>
             <BillModalBody>
               <BillModalImg
-                src={selectedBillModal.bill_image_url?.replace('http://', 'https://')}
+                src={ensureHttps(selectedBillModal.bill_image_url)}
                 alt={`Fuel bill receipt for ${selectedBillModal.bunk_name}`}
                 referrerPolicy="no-referrer"
                 style={{ maxHeight: '75vh', cursor: 'zoom-in' }}
@@ -2391,7 +2391,7 @@ const FuelPage = () => {
             </BillModalBody>
             <BillModalFooter style={{ justifyContent: 'space-between' }}>
               <a 
-                href={selectedBillModal.bill_image_url?.replace('http://', 'https://')} 
+                href={ensureHttps(selectedBillModal.bill_image_url)} 
                 target="_blank" 
                 rel="noopener noreferrer"
                 style={{ color: '#15803d', fontSize: '13px', fontWeight: 'bold', textDecoration: 'none' }}
@@ -2416,12 +2416,19 @@ const FuelPage = () => {
 export default FuelPage;
 
 
-// =====================================================
-// STYLES
-// =====================================================
+// =========================================================================
+// HELPERS
+// =========================================================================
+const ensureHttps = (url) => {
+  if (!url) return '';
+  const trimmedUrl = url.trim();
+  if (trimmedUrl.startsWith('http://')) return trimmedUrl.replace('http://', 'https://');
+  if (trimmedUrl.startsWith('//')) return 'https:' + trimmedUrl;
+  if (!trimmedUrl.startsWith('http')) return 'https://' + trimmedUrl;
+  return trimmedUrl;
+};
 
-
-// =====================================================
+// ================================================================================================================
 // PAGE
 // =====================================================
 

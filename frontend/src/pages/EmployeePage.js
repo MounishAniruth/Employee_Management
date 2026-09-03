@@ -3747,7 +3747,7 @@ const EmployeePage = () => {
                     </button>
                   )}
                   <IdProofModalImg
-                    src={urls[lightboxIndex]?.replace('http://', 'https://')}
+                    src={ensureHttps(urls[lightboxIndex])}
                     alt={`ID proof for ${selectedIdModal.name} - ${lightboxIndex + 1}`}
                     referrerPolicy="no-referrer"
                     style={{ maxHeight: '75vh', cursor: 'zoom-in' }}
@@ -3770,7 +3770,7 @@ const EmployeePage = () => {
                 </IdProofModalBody>
                 <IdProofModalFooter style={{ justifyContent: 'space-between' }}>
                   <a 
-                    href={urls[lightboxIndex]?.replace('http://', 'https://')} 
+                    href={ensureHttps(urls[lightboxIndex])} 
                     target="_blank" 
                     rel="noopener noreferrer"
                     style={{ color: '#15803d', fontSize: '13px', fontWeight: 'bold', textDecoration: 'none' }}

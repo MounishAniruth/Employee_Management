@@ -1632,7 +1632,6 @@ const FuelPage = () => {
                         type="file"
                         id="fuel-bill-file-input"
                         accept="image/*"
-                        capture="environment"
                         onChange={handleBillChange}
                         style={{ display: "none" }}
                       />

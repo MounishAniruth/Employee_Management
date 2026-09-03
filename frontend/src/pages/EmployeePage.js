@@ -3037,7 +3037,6 @@ const EmployeePage = () => {
                         <input
                           type="file"
                           accept="image/*"
-                          capture="environment"
                           multiple
                           style={{ display: "none" }}
                           onChange={handleIdProofChange}

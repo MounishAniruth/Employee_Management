@@ -2376,7 +2376,7 @@ const FuelPage = () => {
             </BillModalHeader>
             <BillModalBody>
               <BillModalImg
-                src={selectedBillModal.bill_image_url}
+                src={selectedBillModal.bill_image_url?.replace('http://', 'https://')}
                 alt={`Fuel bill receipt for ${selectedBillModal.bunk_name}`}
                 referrerPolicy="no-referrer"
                 style={{ maxHeight: '75vh', cursor: 'zoom-in' }}
@@ -2391,7 +2391,7 @@ const FuelPage = () => {
             </BillModalBody>
             <BillModalFooter style={{ justifyContent: 'space-between' }}>
               <a 
-                href={selectedBillModal.bill_image_url} 
+                href={selectedBillModal.bill_image_url?.replace('http://', 'https://')} 
                 target="_blank" 
                 rel="noopener noreferrer"
                 style={{ color: '#15803d', fontSize: '13px', fontWeight: 'bold', textDecoration: 'none' }}

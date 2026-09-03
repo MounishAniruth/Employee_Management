@@ -119,6 +119,7 @@ CREATE TABLE IF NOT EXISTS `fuel` (
   `km_reading_before` int DEFAULT NULL,
   `km_reading_after` int DEFAULT NULL,
   `status` enum('pending','cleared') NOT NULL DEFAULT 'pending',
+  `bill_image_url` varchar(500) DEFAULT NULL,
   PRIMARY KEY (`id`),
   KEY `fk_fuel_lorry` (`lorry_id`),
   CONSTRAINT `fk_fuel_lorry` FOREIGN KEY (`lorry_id`) REFERENCES `lorries` (`id`) ON DELETE CASCADE

@@ -193,7 +193,8 @@ const Fuel = {
         total_amount,
         amount_paid,
         remaining_amount,
-        status
+        status,
+        bill_image_url
       FROM fuel
       WHERE id = ?
     `;
@@ -228,7 +229,8 @@ const Fuel = {
       bunk_name,
       litres_filled,
       price_per_litre,
-      amount_paid
+      amount_paid,
+      bill_image_url = null
     } = data;
 
 
@@ -241,9 +243,10 @@ const Fuel = {
         litres_filled,
         price_per_litre,
         amount_paid,
-        status
+        status,
+        bill_image_url
       )
-      VALUES (?, ?, ?, ?, ?, ?, 'pending')
+      VALUES (?, ?, ?, ?, ?, ?, 'pending', ?)
     `;
 
 
@@ -256,7 +259,8 @@ const Fuel = {
           bunk_name,
           litres_filled,
           price_per_litre,
-          amount_paid
+          amount_paid,
+          bill_image_url
         ]
       );
 
@@ -297,7 +301,9 @@ const Fuel = {
 
         remaining_amount,
 
-        status
+        status,
+
+        bill_image_url
 
       FROM fuel
 

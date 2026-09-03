@@ -78,9 +78,42 @@ const FuelPage = () => {
   const [loading, setLoading] =
     useState(false);
 
-
   const [pageLoading, setPageLoading] =
     useState(true);
+
+  // Bill Photo States
+  const [billFile, setBillFile] =
+    useState(null);
+
+  const [billPreview, setBillPreview] =
+    useState(null);
+
+  const [selectedBillModal, setSelectedBillModal] =
+    useState(null);
+
+  const handleBillChange = (e) => {
+    const file = e.target.files?.[0];
+    if (file) {
+      if (!file.type.startsWith("image/")) {
+        alert("Please select a valid image file (JPG, PNG, WEBP).");
+        return;
+      }
+      if (file.size > 10 * 1024 * 1024) {
+        alert("Image size should not exceed 10MB.");
+        return;
+      }
+      setBillFile(file);
+      setBillPreview(URL.createObjectURL(file));
+    }
+  };
+
+  const handleRemoveBill = () => {
+    setBillFile(null);
+    if (billPreview) {
+      URL.revokeObjectURL(billPreview);
+      setBillPreview(null);
+    }
+  };
 
 
   // =====================================================
@@ -385,15 +418,52 @@ const FuelPage = () => {
         setLoading(true);
 
 
+        const formData = new FormData();
+        formData.append(
+          "registration_number",
+          fuelData.registration_number
+        );
+        formData.append(
+          "date_filled",
+          fuelData.date_filled
+        );
+        formData.append(
+          "bunk_name",
+          fuelData.bunk_name
+        );
+        formData.append(
+          "litres_filled",
+          fuelData.litres_filled
+        );
+        formData.append(
+          "price_per_litre",
+          fuelData.price_per_litre
+        );
+        formData.append(
+          "amount_paid",
+          fuelData.amount_paid
+        );
+
+        if (billFile) {
+          formData.append(
+            "bill_image",
+            billFile
+          );
+        }
+
         await api.post(
           "/fuel/add",
-          fuelData
+          formData,
+          {
+            headers: {
+              "Content-Type": "multipart/form-data"
+            }
+          }
         );
 
         alert(
           "Fuel details added successfully!"
         );
-
 
         setFuelData(
           previousData => ({
@@ -406,6 +476,8 @@ const FuelPage = () => {
             amount_paid: ""
           })
         );
+
+        handleRemoveBill();
 
 
         // Refresh current records
@@ -1542,6 +1614,64 @@ const FuelPage = () => {
                 </CalculatedCard>
 
 
+                {/* BILL RECEIPT UPLOAD */}
+                <BillUploadCard>
+
+                  <BillUploadHeader>
+                    <BillUploadTitle>
+                      <span>📸</span> Fuel Bill Receipt (Photo)
+                    </BillUploadTitle>
+                    <BillUploadSubtitle>
+                      Capture bill via phone camera or upload from gallery
+                    </BillUploadSubtitle>
+                  </BillUploadHeader>
+
+                  {!billPreview ? (
+                    <UploadDropzone>
+                      <input
+                        type="file"
+                        id="fuel-bill-file-input"
+                        accept="image/*"
+                        capture="environment"
+                        onChange={handleBillChange}
+                        style={{ display: "none" }}
+                      />
+                      <UploadTrigger htmlFor="fuel-bill-file-input">
+                        <UploadIcon>📷</UploadIcon>
+                        <UploadText>
+                          <strong>Take photo</strong> or upload fuel bill
+                        </UploadText>
+                        <UploadHint>
+                          Supports JPG, PNG, WEBP (Max 10MB)
+                        </UploadHint>
+                      </UploadTrigger>
+                    </UploadDropzone>
+                  ) : (
+                    <BillPreviewContainer>
+                      <BillPreviewImage
+                        src={billPreview}
+                        alt="Fuel Bill Preview"
+                      />
+                      <BillPreviewInfo>
+                        <BillFileName>
+                          {billFile?.name || "Fuel Bill Receipt"}
+                        </BillFileName>
+                        <BillFileSize>
+                          {billFile ? (billFile.size / 1024).toFixed(1) + " KB" : ""}
+                        </BillFileSize>
+                        <RemoveBillButton
+                          type="button"
+                          onClick={handleRemoveBill}
+                        >
+                          ✕ Remove / Retake
+                        </RemoveBillButton>
+                      </BillPreviewInfo>
+                    </BillPreviewContainer>
+                  )}
+
+                </BillUploadCard>
+
+
               </FormGrid>
 
 
@@ -1862,6 +1992,10 @@ const FuelPage = () => {
                       </TableHeader>
 
                       <TableHeader>
+                        Bill
+                      </TableHeader>
+
+                      <TableHeader>
                         Action
                       </TableHeader>
 
@@ -2009,6 +2143,22 @@ const FuelPage = () => {
                                 )
                               }
 
+                            </TableData>
+
+
+                            {/* BILL RECEIPT */}
+                            <TableData>
+                              {fuel.bill_image_url ? (
+                                <ViewBillBtn
+                                  type="button"
+                                  onClick={() => setSelectedBillModal(fuel)}
+                                  title="View fuel bill receipt"
+                                >
+                                  🧾 View
+                                </ViewBillBtn>
+                              ) : (
+                                <NoBillDash>—</NoBillDash>
+                              )}
                             </TableData>
 
 
@@ -2200,12 +2350,52 @@ const FuelPage = () => {
           Sri Murugan Rig Service
         </FooterBrand>
 
-
         <FooterTagline>
           Since 2001 — Reliability at Every Depth.
         </FooterTagline>
 
       </PageFooter>
+
+
+      {/* =================================================
+          BILL PREVIEW MODAL
+      ================================================= */}
+      {selectedBillModal && (
+        <BillModalOverlay onClick={() => setSelectedBillModal(null)}>
+          <BillModalContent onClick={(e) => e.stopPropagation()}>
+            <BillModalHeader>
+              <div>
+                <BillModalTitle>Fuel Bill Receipt</BillModalTitle>
+                <BillModalMeta>
+                  {selectedBillModal.bunk_name} • {selectedBillModal.date_filled} • ₹
+                  {formatMoney(selectedBillModal.total_amount)}
+                </BillModalMeta>
+              </div>
+              <BillModalClose onClick={() => setSelectedBillModal(null)}>
+                ✕
+              </BillModalClose>
+            </BillModalHeader>
+            <BillModalBody>
+              <BillModalImg
+                src={selectedBillModal.bill_image_url}
+                alt={`Fuel bill receipt for ${selectedBillModal.bunk_name}`}
+              />
+            </BillModalBody>
+            <BillModalFooter>
+              <BillModalLink
+                href={selectedBillModal.bill_image_url}
+                target="_blank"
+                rel="noopener noreferrer"
+              >
+                Open Original Image ↗
+              </BillModalLink>
+              <BillModalDoneBtn onClick={() => setSelectedBillModal(null)}>
+                Close
+              </BillModalDoneBtn>
+            </BillModalFooter>
+          </BillModalContent>
+        </BillModalOverlay>
+      )}
 
     </Page>
 
@@ -4789,6 +4979,309 @@ const LoadingText = styled.div`
   font-size:
     12px;
 
+`;
+
+
+// =====================================================
+// BILL UPLOAD & MODAL STYLES
+// =====================================================
+
+const BillUploadCard = styled.div`
+  grid-column: 1 / -1;
+  background: #f8faf9;
+  border: 1.5px dashed #cbd5e1;
+  border-radius: 14px;
+  padding: 16px 20px;
+  transition: all 0.2s ease;
+
+  &:hover {
+    border-color: #16a34a;
+    background: #f0fdf4;
+  }
+`;
+
+const BillUploadHeader = styled.div`
+  margin-bottom: 12px;
+`;
+
+const BillUploadTitle = styled.div`
+  font-size: 13px;
+  font-weight: 800;
+  color: #1e293b;
+  display: flex;
+  align-items: center;
+  gap: 8px;
+`;
+
+const BillUploadSubtitle = styled.div`
+  font-size: 11px;
+  color: #64748b;
+  margin-top: 2px;
+`;
+
+const UploadDropzone = styled.div`
+  width: 100%;
+`;
+
+const UploadTrigger = styled.label`
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  gap: 6px;
+  padding: 20px 16px;
+  background: #ffffff;
+  border: 1px solid #e2e8f0;
+  border-radius: 12px;
+  cursor: pointer;
+  transition: all 0.2s ease;
+
+  &:hover {
+    background: #f0fdf4;
+    border-color: #86efac;
+    transform: translateY(-1px);
+  }
+`;
+
+const UploadIcon = styled.div`
+  font-size: 28px;
+`;
+
+const UploadText = styled.div`
+  font-size: 13px;
+  color: #334155;
+
+  strong {
+    color: #15803d;
+  }
+`;
+
+const UploadHint = styled.div`
+  font-size: 11px;
+  color: #94a3b8;
+`;
+
+const BillPreviewContainer = styled.div`
+  display: flex;
+  align-items: center;
+  gap: 16px;
+  background: #ffffff;
+  padding: 12px 16px;
+  border-radius: 12px;
+  border: 1px solid #bbf7d0;
+`;
+
+const BillPreviewImage = styled.img`
+  width: 68px;
+  height: 68px;
+  object-fit: cover;
+  border-radius: 10px;
+  border: 1px solid #e2e8f0;
+  box-shadow: 0 4px 10px rgba(0, 0, 0, 0.06);
+`;
+
+const BillPreviewInfo = styled.div`
+  flex: 1;
+  display: flex;
+  flex-direction: column;
+  gap: 4px;
+`;
+
+const BillFileName = styled.div`
+  font-size: 13px;
+  font-weight: 700;
+  color: #0f172a;
+  word-break: break-all;
+`;
+
+const BillFileSize = styled.div`
+  font-size: 11px;
+  color: #64748b;
+`;
+
+const RemoveBillButton = styled.button`
+  align-self: flex-start;
+  margin-top: 4px;
+  padding: 4px 10px;
+  background: #fef2f2;
+  color: #dc2626;
+  border: 1px solid #fecaca;
+  border-radius: 6px;
+  font-size: 11px;
+  font-weight: 700;
+  cursor: pointer;
+  transition: all 0.15s ease;
+
+  &:hover {
+    background: #fee2e2;
+  }
+`;
+
+const ViewBillBtn = styled.button`
+  display: inline-flex;
+  align-items: center;
+  gap: 5px;
+  padding: 6px 12px;
+  border-radius: 8px;
+  border: 1px solid #bbf7d0;
+  background: #f0fdf4;
+  color: #15803d;
+  font-size: 12px;
+  font-weight: 800;
+  cursor: pointer;
+  box-shadow: 0 2px 6px rgba(22, 163, 74, 0.08);
+  transition: all 0.15s ease;
+
+  &:hover {
+    background: #dcfce7;
+    border-color: #86efac;
+    transform: translateY(-1px);
+    box-shadow: 0 4px 10px rgba(22, 163, 74, 0.15);
+  }
+`;
+
+const NoBillDash = styled.span`
+  color: #94a3b8;
+  font-weight: 700;
+`;
+
+const BillModalOverlay = styled.div`
+  position: fixed;
+  inset: 0;
+  background: rgba(15, 23, 42, 0.7);
+  backdrop-filter: blur(4px);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  z-index: 9999;
+  padding: 20px;
+`;
+
+const BillModalContent = styled.div`
+  background: #ffffff;
+  border-radius: 18px;
+  max-width: 600px;
+  width: 100%;
+  max-height: 90vh;
+  display: flex;
+  flex-direction: column;
+  box-shadow: 0 25px 50px -12px rgba(0, 0, 0, 0.25);
+  overflow: hidden;
+  animation: popIn 0.2s cubic-bezier(0.16, 1, 0.3, 1);
+
+  @keyframes popIn {
+    from {
+      opacity: 0;
+      transform: scale(0.95);
+    }
+    to {
+      opacity: 1;
+      transform: scale(1);
+    }
+  }
+`;
+
+const BillModalHeader = styled.div`
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  padding: 18px 24px;
+  border-bottom: 1px solid #eef2f6;
+  background: #fcfdfd;
+`;
+
+const BillModalTitle = styled.h3`
+  margin: 0;
+  font-size: 16px;
+  font-weight: 800;
+  color: #0f172a;
+`;
+
+const BillModalMeta = styled.div`
+  font-size: 12px;
+  color: #64748b;
+  margin-top: 3px;
+  font-weight: 600;
+`;
+
+const BillModalClose = styled.button`
+  background: #f1f5f9;
+  border: none;
+  border-radius: 50%;
+  width: 32px;
+  height: 32px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  color: #475569;
+  font-size: 14px;
+  font-weight: 700;
+  cursor: pointer;
+  transition: all 0.15s ease;
+
+  &:hover {
+    background: #e2e8f0;
+    color: #0f172a;
+  }
+`;
+
+const BillModalBody = styled.div`
+  padding: 20px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  background: #0f172a08;
+  overflow-y: auto;
+  max-height: 65vh;
+`;
+
+const BillModalImg = styled.img`
+  max-width: 100%;
+  max-height: 60vh;
+  object-fit: contain;
+  border-radius: 12px;
+  box-shadow: 0 10px 25px rgba(0, 0, 0, 0.1);
+  border: 1px solid #e2e8f0;
+  background: #ffffff;
+`;
+
+const BillModalFooter = styled.div`
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  padding: 16px 24px;
+  border-top: 1px solid #eef2f6;
+  background: #ffffff;
+`;
+
+const BillModalLink = styled.a`
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+  color: #15803d;
+  font-size: 13px;
+  font-weight: 700;
+  text-decoration: none;
+
+  &:hover {
+    text-decoration: underline;
+  }
+`;
+
+const BillModalDoneBtn = styled.button`
+  padding: 9px 20px;
+  background: #15803d;
+  color: #ffffff;
+  border: none;
+  border-radius: 10px;
+  font-size: 13px;
+  font-weight: 700;
+  cursor: pointer;
+  transition: all 0.15s ease;
+
+  &:hover {
+    background: #166534;
+  }
 `;
 
 

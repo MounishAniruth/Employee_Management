@@ -86,6 +86,27 @@ const PointDetails = () => {
   const [toDate, setToDate] =
     useState("");
 
+  const overallSummary = points.reduce(
+    (acc, point) => {
+      acc.total_points += 1;
+      acc.total_depth += Number(point.total_depth || 0);
+      acc.total_running_rpm += Number(
+        point.running_rpm ||
+          (Number(point.closing_rpm || 0) -
+            Number(point.starting_rpm || 0)) ||
+          0
+      );
+      acc.total_amount += Number(point.total_amount || 0);
+      return acc;
+    },
+    {
+      total_points: 0,
+      total_depth: 0,
+      total_running_rpm: 0,
+      total_amount: 0,
+    }
+  );
+
 
   // =====================================================
   // FORM
@@ -1973,7 +1994,7 @@ const PointDetails = () => {
 
 
               <SummaryValue>
-                {summary.total_points}
+                {overallSummary.total_points}
               </SummaryValue>
 
             </SummaryContent>
@@ -1998,7 +2019,7 @@ const PointDetails = () => {
               <SummaryValue>
 
                 {Number(
-                  summary.total_depth ||
+                  overallSummary.total_depth ||
                     0
                 ).toLocaleString()}
 
@@ -2030,7 +2051,7 @@ const PointDetails = () => {
               <SummaryValue>
 
                 {Number(
-                  summary.total_running_rpm ||
+                  overallSummary.total_running_rpm ||
                     0
                 ).toFixed(2)}
 
@@ -2059,7 +2080,7 @@ const PointDetails = () => {
 
                 ₹
                 {Number(
-                  summary.total_amount ||
+                  overallSummary.total_amount ||
                     0
                 ).toLocaleString()}
 

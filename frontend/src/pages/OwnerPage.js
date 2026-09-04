@@ -29,6 +29,7 @@ import {
   Settings,
   LogOut,
   ChevronRight,
+  FileText,
 } from "lucide-react";
 
 
@@ -363,6 +364,33 @@ const OwnerPage = () => {
 
     navigate(
       `/point-details/${selectedLorryId}`
+    );
+
+  };
+
+
+  // =====================================================
+  // DOCUMENTS PAGE
+  // =====================================================
+
+  const handleDocumentsNavigation = () => {
+
+    if (!selectedLorryId) {
+
+      alert(
+        "Please select a rig first."
+      );
+
+      setIsMenuOpen(false);
+
+      return;
+
+    }
+
+    setIsMenuOpen(false);
+
+    navigate(
+      `/documents/${selectedLorryId}`
     );
 
   };
@@ -1081,7 +1109,33 @@ const OwnerPage = () => {
             </MenuIcon>
 
             <MenuItemText>
-              Point Details
+              Points
+            </MenuItemText>
+
+            <ChevronRight
+              size={16}
+              className="arrow"
+            />
+
+          </MenuItem>
+
+
+          {/* DOCUMENTS */}
+
+          <MenuItem
+            onClick={
+              handleDocumentsNavigation
+            }
+          >
+
+            <MenuIcon>
+              <FileText
+                size={19}
+              />
+            </MenuIcon>
+
+            <MenuItemText>
+              Documents
             </MenuItemText>
 
             <ChevronRight

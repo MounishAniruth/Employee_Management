@@ -8,6 +8,24 @@ const roleMiddleware = require("../middleware/roleMiddleware");
 
 const { ROLES } = require("../utils/constants");
 
+const multer = require("multer");
+const { uploadToBunny, deleteFromBunny } = require("../utils/bunnyUpload");
+
+const storage = multer.memoryStorage();
+const upload = multer({
+  storage,
+  limits: {
+    fileSize: 10 * 1024 * 1024,
+  },
+  fileFilter: (req, file, cb) => {
+    if (file.mimetype.startsWith("image/")) {
+      cb(null, true);
+    } else {
+      cb(new Error("Only images are allowed"));
+    }
+  },
+});
+
 
 // =====================================================
 // GET ALL LORRIES
@@ -663,5 +681,94 @@ router.delete(
   }
 );
 
+
+// =====================================================
+// ADD LORRY DOCUMENTS
+// =====================================================
+router.post(
+  "/:id/documents",
+  authMiddleware,
+  upload.array("documents", 5),
+  async (req, res) => {
+    try {
+      const userType = req.user.user_type;
+      if (userType !== ROLES.OWNER && userType !== ROLES.MANAGER) {
+        return res.status(403).json({ message: "Not authorized to upload documents" });
+      }
+
+      const lorryId = Number(req.params.id);
+      const { documentType } = req.body;
+
+      if (!lorryId) return res.status(400).json({ message: "Invalid lorry ID" });
+      if (!documentType) return res.status(400).json({ message: "Document type is required" });
+
+      const lorry = await Lorry.findByIdForUser(lorryId, req.user.id, userType);
+      if (!lorry) return res.status(403).json({ message: "Lorry not found or not authorized" });
+
+      let newUrls = [];
+      if (req.files && req.files.length > 0) {
+        for (const file of req.files) {
+          const url = await uploadToBunny(
+            file.buffer,
+            file.originalname,
+            file.mimetype,
+            "lorry-documents"
+          );
+          newUrls.push(url);
+        }
+      }
+
+      if (newUrls.length === 0) {
+        return res.status(400).json({ message: "No documents uploaded" });
+      }
+
+      const updatedUrls = await Lorry.addDocumentUrls(lorryId, documentType, newUrls);
+
+      return res.status(200).json({
+        message: "Documents uploaded successfully",
+        urls: updatedUrls
+      });
+    } catch (error) {
+      console.error("Error adding lorry documents:", error);
+      return res.status(500).json({ message: "Error adding documents", error: error.message });
+    }
+  }
+);
+
+// =====================================================
+// REMOVE LORRY DOCUMENT
+// =====================================================
+router.delete(
+  "/:id/documents",
+  authMiddleware,
+  async (req, res) => {
+    try {
+      const userType = req.user.user_type;
+      if (userType !== ROLES.OWNER && userType !== ROLES.MANAGER) {
+        return res.status(403).json({ message: "Not authorized to delete documents" });
+      }
+
+      const lorryId = Number(req.params.id);
+      const { documentType, url } = req.body;
+
+      if (!lorryId) return res.status(400).json({ message: "Invalid lorry ID" });
+      if (!documentType || !url) return res.status(400).json({ message: "Document type and url are required" });
+
+      const lorry = await Lorry.findByIdForUser(lorryId, req.user.id, userType);
+      if (!lorry) return res.status(403).json({ message: "Lorry not found or not authorized" });
+
+      await deleteFromBunny(url);
+      const updatedUrls = await Lorry.removeDocumentUrl(lorryId, documentType, url);
+
+      return res.status(200).json({
+        message: "Document deleted successfully",
+        urls: updatedUrls
+      });
+    } catch (error) {
+      console.error("Error deleting lorry document:", error);
+      return res.status(500).json({ message: "Error deleting document", error: error.message });
+    }
+  }
+);
 
 module.exports = router;

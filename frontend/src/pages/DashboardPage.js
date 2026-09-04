@@ -63,6 +63,11 @@ const DashboardPage = () => {
     navigate(`/point-details/${id}`);
   };
 
+  const handleDocumentsPage = () => {
+    setMenuOpen(false);
+    navigate(`/documents/${id}`);
+  };
+
   const handleOwnerPage = () => {
     setMenuOpen(false);
     navigate("/owner");
@@ -301,6 +306,19 @@ const DashboardPage = () => {
 
             <MenuText>
               Point Details
+            </MenuText>
+
+          </MenuItem>
+
+
+          <MenuItem onClick={handleDocumentsPage}>
+
+            <MenuIcon>
+              📄
+            </MenuIcon>
+
+            <MenuText>
+              Documents
             </MenuText>
 
           </MenuItem>
@@ -716,6 +734,47 @@ const DashboardPage = () => {
 
             <CardAction>
               View Point Details
+              <span>
+                →
+              </span>
+            </CardAction>
+
+          </ManagementCard>
+
+
+          {/* =================================================
+              DOCUMENTS
+          ================================================= */}
+
+          <ManagementCard
+            type="button"
+            onClick={handleDocumentsPage}
+          >
+
+            <CardTop>
+
+              <CardIcon $type="documents">
+                📄
+              </CardIcon>
+
+              <CardArrow>
+                →
+              </CardArrow>
+
+            </CardTop>
+
+
+            <CardTitle>
+              Documents
+            </CardTitle>
+
+            <CardDescription>
+              View and manage lorry documents
+              like RC Book, Insurance, etc.
+            </CardDescription>
+
+            <CardAction>
+              View Documents
               <span>
                 →
               </span>

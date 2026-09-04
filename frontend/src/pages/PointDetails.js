@@ -5392,9 +5392,9 @@ const HeaderRigNumber = styled.div`
 const MainContent = styled.main`
   width: 100%;
 
-  max-width: 1800px;
+  max-width: 1400px;
 
-  margin-left: 0;
+  margin: 0 auto;
 
   padding: 55px 48px 70px;
 

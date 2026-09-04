@@ -187,6 +187,28 @@ const LorryManagerPage = () => {
 
 
   // =====================================================
+  // OPEN DOCUMENTS
+  // =====================================================
+
+  const openDocuments = () => {
+
+    if (!lorry) {
+
+      return;
+
+    }
+
+
+    navigate(
+      `/documents/${lorry.id}`
+    );
+
+    setMenuOpen(false);
+
+  };
+
+
+  // =====================================================
   // GO HOME
   // =====================================================
 
@@ -414,6 +436,32 @@ const LorryManagerPage = () => {
 
                 <MenuItemText>
                   Manage drilling points
+                </MenuItemText>
+
+              </MenuContent>
+
+            </MenuItem>
+
+
+            <MenuItem
+              onClick={openDocuments}
+              disabled={!lorry}
+            >
+
+              <MenuIcon>
+                📄
+              </MenuIcon>
+
+
+              <MenuContent>
+
+                <MenuItemTitle>
+                  Documents
+                </MenuItemTitle>
+
+
+                <MenuItemText>
+                  Lorry documents
                 </MenuItemText>
 
               </MenuContent>
@@ -906,6 +954,52 @@ const LorryManagerPage = () => {
                     <ModuleAction>
 
                       Open Point Details
+
+                      <Arrow>
+                        →
+                      </Arrow>
+
+                    </ModuleAction>
+
+                  </ModuleContent>
+
+                </ModuleCard>
+
+
+                {/* ==========================================
+                    DOCUMENTS
+                ========================================== */}
+
+                <ModuleCard
+                  onClick={openDocuments}
+                >
+
+                  <ModuleIcon document>
+                    📄
+                  </ModuleIcon>
+
+
+                  <ModuleContent>
+
+                    <ModuleEyebrow>
+                      FILES
+                    </ModuleEyebrow>
+
+
+                    <ModuleTitle>
+                      Documents
+                    </ModuleTitle>
+
+
+                    <ModuleDescription>
+
+                      Manage lorry documents like RC Book, Insurance, etc.
+
+                    </ModuleDescription>
+
+
+                    <ModuleAction>
+                      Open Documents
 
                       <Arrow>
                         →

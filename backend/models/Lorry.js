@@ -655,6 +655,61 @@ const Lorry = {
 
     }
 
+  },
+
+  // =====================================================
+  // ADD LORRY DOCUMENTS
+  // =====================================================
+
+  addDocumentUrls: async (lorryId, documentType, newUrls) => {
+    let column;
+    if (documentType === 'rc_book') column = 'rc_book_urls';
+    else if (documentType === 'insurance') column = 'insurance_urls';
+    else if (documentType === 'pollution') column = 'pollution_urls';
+    else throw new Error("Invalid document type");
+
+    const [rows] = await db.query(`SELECT ${column} FROM lorries WHERE id = ?`, [lorryId]);
+    if (rows.length === 0) throw new Error("Lorry not found");
+
+    let existingUrls = [];
+    try {
+      if (rows[0][column]) {
+        existingUrls = typeof rows[0][column] === 'string' ? JSON.parse(rows[0][column]) : rows[0][column];
+      }
+    } catch (e) {}
+
+    const updatedUrls = [...existingUrls, ...newUrls];
+
+    await db.query(`UPDATE lorries SET ${column} = ? WHERE id = ?`, [JSON.stringify(updatedUrls), lorryId]);
+    return updatedUrls;
+  },
+
+
+  // =====================================================
+  // REMOVE LORRY DOCUMENT
+  // =====================================================
+
+  removeDocumentUrl: async (lorryId, documentType, urlToRemove) => {
+    let column;
+    if (documentType === 'rc_book') column = 'rc_book_urls';
+    else if (documentType === 'insurance') column = 'insurance_urls';
+    else if (documentType === 'pollution') column = 'pollution_urls';
+    else throw new Error("Invalid document type");
+
+    const [rows] = await db.query(`SELECT ${column} FROM lorries WHERE id = ?`, [lorryId]);
+    if (rows.length === 0) throw new Error("Lorry not found");
+
+    let existingUrls = [];
+    try {
+      if (rows[0][column]) {
+        existingUrls = typeof rows[0][column] === 'string' ? JSON.parse(rows[0][column]) : rows[0][column];
+      }
+    } catch (e) {}
+
+    const updatedUrls = existingUrls.filter(u => u !== urlToRemove);
+
+    await db.query(`UPDATE lorries SET ${column} = ? WHERE id = ?`, [JSON.stringify(updatedUrls), lorryId]);
+    return updatedUrls;
   }
 
 };

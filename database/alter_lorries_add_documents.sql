@@ -1,0 +1,4 @@
+ALTER TABLE `lorries`
+ADD COLUMN `rc_book_urls` JSON DEFAULT NULL,
+ADD COLUMN `insurance_urls` JSON DEFAULT NULL,
+ADD COLUMN `pollution_urls` JSON DEFAULT NULL;

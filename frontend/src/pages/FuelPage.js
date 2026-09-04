@@ -1009,6 +1009,7 @@ const FuelPage = () => {
   return (
 
     <Page>
+      <MainContent>
       <ResponsiveStyle />
 
       {/* =================================================
@@ -2405,7 +2406,7 @@ const FuelPage = () => {
           </BillModalContent>
         </BillModalOverlay>
       )}
-
+      </MainContent>
     </Page>
 
   );
@@ -2461,6 +2462,12 @@ const Page = styled.div`
 
 `;
 
+const MainContent = styled.div`
+  max-width: 1400px;
+  margin: 0 auto;
+  width: 100%;
+`;
+
 
 // =====================================================
 // TOP BAR
@@ -2468,7 +2475,7 @@ const Page = styled.div`
 
 const TopBar = styled.div`
 
-  max-width: 1450px;
+  max-width: 100%;
 
   margin:
     0 auto 25px;
@@ -2658,7 +2665,7 @@ const Hero = styled.section`
 
   position: relative;
 
-  max-width: 1450px;
+  max-width: 100%;
 
   min-height: 310px;
 
@@ -2944,7 +2951,7 @@ const HeroBackgroundCircleTwo = styled.div`
 
 const Section = styled.section`
 
-  max-width: 1450px;
+  max-width: 100%;
 
   margin:
     0 auto 35px;
@@ -3042,7 +3049,7 @@ const SectionDescription = styled.div`
 
 const SummaryGrid = styled.div`
 
-  max-width: 1450px;
+  max-width: 100%;
 
   margin:
     0 auto 38px;

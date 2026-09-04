@@ -1615,6 +1615,7 @@ const EmployeePage = () => {
       <ResponsiveStyle />
 
       <Page>
+        <MainContent>
 
         {/* =========================================
             TOP HEADER
@@ -3785,8 +3786,7 @@ const EmployeePage = () => {
             </IdProofModalOverlay>
           );
         })()}
-
-
+        </MainContent>
       </Page>
     </>
   );
@@ -3847,6 +3847,12 @@ const Page = styled.div`
       #eef4f0 100%
     );
 
+`;
+
+const MainContent = styled.div`
+  max-width: 1400px;
+  margin: 0 auto;
+  width: 100%;
 `;
 
 
